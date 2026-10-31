@@ -8,6 +8,11 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="김천사랑지도">
 <link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
@@ -95,6 +100,35 @@ li.it{background:var(--surface);border:1px solid var(--line);border-radius:10px;
 .note{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:4px}
 .note p{margin:0}
 .empty{color:var(--muted);padding:20px 0}
+.viewbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+#mapwrap{position:relative}
+body.mapmode .ctl{position:static}
+#map{height:calc(100vh - 150px);height:calc(100dvh - 150px);min-height:360px;border-radius:10px;border:1px solid var(--line);z-index:0;background:var(--surface)}
+.recenter{position:absolute;right:12px;bottom:22px;z-index:500;font:inherit;font-size:14px;font-weight:700;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:99px;padding:8px 14px;box-shadow:0 2px 8px rgba(0,0,0,.18);cursor:pointer}
+.recenter[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.mapnote{font-size:12px;color:var(--muted);margin:4px 0 0}
+.lfw{transform:translate(-50%,-50%);width:max-content}
+.pin{width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.3)}
+.pin.loc{background:var(--warn)}
+.pin-price{background:var(--board);color:var(--digit);font-family:var(--f-num);font-size:12px;font-weight:600;padding:2px 6px;border-radius:6px;white-space:nowrap;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+.pin-price.best{background:var(--accent);color:var(--accent-ink)}
+.me{position:relative;width:18px;height:18px}
+.me i{position:absolute;inset:0;border-radius:50%;background:#e53935;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.me b{position:absolute;inset:-10px;border-radius:50%;background:rgba(229,57,53,.28);animation:pulse 1.8s ease-out infinite}
+@keyframes pulse{0%{transform:scale(.5);opacity:1}100%{transform:scale(1.6);opacity:0}}
+@media (prefers-reduced-motion:reduce){.me b{animation:none}}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--surface);color:var(--ink)}
+.leaflet-container a.leaflet-popup-close-button{color:var(--muted)}
+.pp{display:flex;flex-direction:column;gap:3px;font-family:var(--f-body);font-size:13px;min-width:180px}
+.pp b{font-size:15px}
+.pp .pc,.pp .pa{color:var(--muted);font-size:12px}
+.pp .pd{font-family:var(--f-num);color:var(--accent);font-weight:600}
+.pp .pr{margin-top:2px}
+.pp .pr b{font-family:var(--f-num);font-size:14px}
+.pp .pl{display:flex;gap:12px;margin-top:4px}
+.pp .pl a{color:var(--accent);font-weight:700;text-decoration:none}
+.kcard{position:relative;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 30px 10px 12px;box-shadow:0 3px 12px rgba(0,0,0,.25);margin-bottom:14px;max-width:270px;white-space:normal}
+.kx{position:absolute;top:2px;right:6px;border:0;background:none;font-size:20px;line-height:1;color:var(--muted);cursor:pointer;padding:4px}
 </style>
 </head>
 <body>
@@ -134,7 +168,18 @@ li.it{background:var(--surface);border:1px solid var(--line);border-radius:10px;
 </div></section>
 
 <main><div class="wrap">
+  <div class="viewbar">
+    <div class="seg" role="group" aria-label="보기 방식">
+      <button id="view-list" data-v="list" aria-pressed="true">목록</button>
+      <button id="view-map" data-v="map" aria-pressed="false">지도</button>
+    </div>
+  </div>
   <div class="summary" id="summary"></div>
+  <div id="mapwrap" hidden>
+    <div id="map" role="region" aria-label="가맹점 지도"></div>
+    <button class="recenter" id="recenter" type="button" aria-pressed="true">내 위치 따라가기</button>
+    <p class="mapnote"><span id="mapsrc"></span> · 빨간 점이 내 위치입니다. 지도를 손으로 움직이면 따라가기가 멈추고, 버튼을 누르면 다시 따라갑니다. 숫자 묶음은 확대하면 가게별로 풀립니다.</p>
+  </div>
   <ol id="list"></ol>
   <button class="more" id="more" type="button" hidden>더 보기</button>
   <div class="note">
@@ -151,7 +196,7 @@ const FUELN = {1:"경유",2:"휘발유",3:"LPG"};
 const $ = id => document.getElementById(id);
 const won = n => n.toLocaleString("ko-KR");
 const won2 = n => n.toLocaleString("ko-KR",{maximumFractionDigits:2});
-const st = {menu:"fuel", sub:null, base:null, q:"", fuel:1, sort:"near", liters:50, eff:null, shown:60};
+const st = {menu:"fuel", sub:null, base:null, q:"", fuel:1, sort:"near", liters:50, eff:null, shown:60, view:"list"};
 function store(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 function load(k){try{return localStorage.getItem(k)}catch(e){return null}}
 $("total").textContent = won(D.rows.length);
@@ -253,6 +298,7 @@ function render(){
   const cheap = fuel && !st.q && (st.sort==="cheap" || !st.base);
   rows.sort((a,b)=> cheap ? (a.g[st.fuel]-b.g[st.fuel]) || ((a.d??1e9)-(b.d??1e9))
                           : ((a.d??1e9)-(b.d??1e9)) || a.n.localeCompare(b.n,"ko"));
+  if(st.view==="map") drawMap(rows);
   const label = st.q ? `‘${st.q}’ 검색 결과` : (D.menus.find(m=>m[0]===st.menu)||[])[1];
   let sum = `<span>${label} <b>${won(rows.length)}</b>곳</span>`;
   if(fuel && !st.q && rows.length){const mn=rows.reduce((m,r)=>r.g[st.fuel]<m.g[st.fuel]?r:m); const av=D.avg[st.fuel]; sum+=` · 김천시 평균 ${FUELN[st.fuel]} <b>${won2(av)}원</b> · 가맹 최저 <b>${won(mn.g[st.fuel])}원</b>(${mn.g[0]})에서 ${st.liters}L 넣으면 평균 대비 <b>${won(Math.round(av*st.liters-mn.g[st.fuel]*st.liters/1.1))}원</b> 이득`; const gl=(av*st.liters-mn.g[st.fuel]*st.liters/1.1)/(mn.g[st.fuel]/1.1); if(gl>0) sum+=` = <b>${gl.toFixed(1)}L</b> 더${st.eff?` (약 <b>${Math.round(gl*st.eff)}km</b>)`:""}`;}
@@ -289,7 +335,7 @@ function render(){
     const h=li.querySelector(".here"); if(h) h.addEventListener("click",()=>{oP.hidden=false; oP.textContent=r.n+" 기준"; sel.value="pin"; $("status").className="status"; $("status").textContent=`${r.n} 위치 기준 직선거리입니다.`; setBase({lat:r.lat,lng:r.lng}); window.scrollTo({top:0});});
     list.appendChild(li);
   });
-  $("more").hidden = rows.length<=st.shown;
+  $("more").hidden = st.view==="map" || rows.length<=st.shown;
   if(!$("more").hidden) $("more").textContent=`더 보기 (${won(rows.length-st.shown)}곳 남음)`;
 }
 
@@ -297,6 +343,152 @@ const sm=load("kc-menu"); if(sm && D.menus.some(m=>m[0]===sm)) st.menu=sm;
 const sb=load("kc-base"); if(sb && sb.startsWith("e:") && D.cen[sb.slice(2)]){sel.value=sb; const c=D.cen[sb.slice(2)]; st.base={lat:c[0],lng:c[1]}; $("status").textContent=`${sb.slice(2)} 중심 기준 직선거리입니다.`;}
 else $("status").textContent="‘내 위치’를 누르거나 읍면동을 골라주세요.";
 sync(); render();
+
+// ---------- 지도 보기 ----------
+// 카카오 JavaScript 키 (공개되어도 되는 키. 카카오 개발자 사이트에 등록한 도메인에서만 동작)
+const KAKAO_KEY = "daa742f2ca6dc5516d43ce092137e591";
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let M=null, mapReady=null, meLL=null, meAcc=30, meShown=false, watchId=null, follow=true, lastKey=null, lastRows=[];
+const hasKakaoKey = KAKAO_KEY && !KAKAO_KEY.startsWith("__");
+
+function loadKakao(){
+  return new Promise(res=>{
+    if(!hasKakaoKey) return res(false);
+    let done=false; const fin=v=>{ if(!done){ done=true; res(v); } };
+    const s=document.createElement("script");
+    s.src=`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_KEY}&libraries=clusterer&autoload=false`;
+    s.onload=()=>{ try{ kakao.maps.load(()=>fin(true)); }catch(e){ fin(false); } };
+    s.onerror=()=>fin(false);
+    document.head.appendChild(s); setTimeout(()=>fin(false),8000);
+  });
+}
+const nodeOf = html => { const d=document.createElement("div"); d.innerHTML=html; return d.firstElementChild; };
+
+const KakaoMap={
+  init(el,lat,lng){
+    const k=kakao.maps;
+    this.m=new k.Map(el,{center:new k.LatLng(lat,lng),level:6});
+    this.m.addControl(new k.ZoomControl(),k.ControlPosition.RIGHT);
+    this.cl=new k.MarkerClusterer({map:this.m,averageCenter:true,minLevel:5,gridSize:50,
+      styles:[{width:"38px",height:"38px",background:"rgba(15,122,92,.88)",border:"2px solid #fff",borderRadius:"50%",color:"#fff",textAlign:"center",lineHeight:"34px",fontWeight:"700",fontSize:"13px"}]});
+    this.card=new k.CustomOverlay({yAnchor:1,zIndex:10,clickable:true});
+    k.event.addListener(this.m,"click",()=>this.card.setMap(null));
+  },
+  onDrag(fn){ kakao.maps.event.addListener(this.m,"dragstart",fn); },
+  setMarkers(items){
+    const k=kakao.maps; this.cl.clear();
+    this.cl.addMarkers(items.map(it=>{ const n=nodeOf(it.html); n.style.cursor="pointer";
+      n.addEventListener("click",e=>{ e.stopPropagation(); it.onClick(); });
+      return new k.CustomOverlay({position:new k.LatLng(it.lat,it.lng),content:n,xAnchor:.5,yAnchor:.5,clickable:true}); }));
+  },
+  openCard(lat,lng,html){
+    const w=nodeOf(`<div class="kcard">${html}<button class="kx" type="button" aria-label="닫기">×</button></div>`);
+    w.querySelector(".kx").addEventListener("click",()=>this.card.setMap(null));
+    w.addEventListener("click",e=>e.stopPropagation());
+    this.card.setContent(w); this.card.setPosition(new kakao.maps.LatLng(lat,lng)); this.card.setMap(this.m);
+  },
+  fit(pts){ const k=kakao.maps, b=new k.LatLngBounds(); pts.forEach(p=>b.extend(new k.LatLng(p[0],p[1]))); this.m.setBounds(b,40,40,40,40); if(this.m.getLevel()<3) this.m.setLevel(3); },
+  setMe(lat,lng,acc){
+    const k=kakao.maps, ll=new k.LatLng(lat,lng);
+    if(!this.me){ this.me=new k.CustomOverlay({position:ll,content:nodeOf('<div class="me"><b></b><i></i></div>'),xAnchor:.5,yAnchor:.5,zIndex:20}); this.me.setMap(this.m);
+      this.circ=new k.Circle({center:ll,radius:acc,strokeWeight:1,strokeColor:"#e53935",strokeOpacity:.6,fillColor:"#e53935",fillOpacity:.08}); this.circ.setMap(this.m); }
+    else { this.me.setPosition(ll); this.circ.setPosition(ll); this.circ.setRadius(acc); }
+  },
+  pan(lat,lng,close){ const ll=new kakao.maps.LatLng(lat,lng); if(close&&this.m.getLevel()>3){ this.m.setLevel(3); this.m.setCenter(ll); } else this.m.panTo(ll); },
+  relayout(){ this.m.relayout(); }
+};
+
+const LeafMap={
+  init(el,lat,lng){
+    this.m=L.map(el,{zoomControl:true}).setView([lat,lng],13);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(this.m);
+    this.cl=L.markerClusterGroup({disableClusteringAtZoom:17,maxClusterRadius:45,chunkedLoading:true,showCoverageOnHover:false});
+    this.m.addLayer(this.cl);
+  },
+  onDrag(fn){ this.m.on("dragstart",fn); },
+  setMarkers(items){
+    this.cl.clearLayers();
+    this.cl.addLayers(items.map(it=>{ const mk=L.marker([it.lat,it.lng],{icon:L.divIcon({className:"",html:`<div class="lfw">${it.html}</div>`,iconSize:[0,0],iconAnchor:[0,0]})}); mk.on("click",it.onClick); return mk; }));
+  },
+  openCard(lat,lng,html){ L.popup({maxWidth:280}).setLatLng([lat,lng]).setContent(html).openOn(this.m); },
+  fit(pts){ this.m.fitBounds(L.latLngBounds(pts),{padding:[30,30],maxZoom:16}); },
+  setMe(lat,lng,acc){
+    if(!this.me){ this.me=L.marker([lat,lng],{icon:L.divIcon({className:"",html:'<div class="lfw"><div class="me"><b></b><i></i></div></div>',iconSize:[0,0],iconAnchor:[0,0]}),zIndexOffset:1000,interactive:false}).addTo(this.m);
+      this.circ=L.circle([lat,lng],{radius:acc,color:"#e53935",weight:1,fillColor:"#e53935",fillOpacity:.08,interactive:false}).addTo(this.m); }
+    else { this.me.setLatLng([lat,lng]); this.circ.setLatLng([lat,lng]).setRadius(acc); }
+  },
+  pan(lat,lng,close){ if(close) this.m.setView([lat,lng],Math.max(this.m.getZoom(),16)); else this.m.panTo([lat,lng],{animate:true}); },
+  relayout(){ this.m.invalidateSize(); }
+};
+
+function ensureMap(){
+  if(mapReady) return mapReady;
+  mapReady=(async()=>{
+    const ok=await loadKakao();
+    if(ok){ M=KakaoMap; $("mapsrc").textContent="지도: 카카오맵"; }
+    else if(typeof L!=="undefined"&&L.markerClusterGroup){ M=LeafMap; $("mapsrc").textContent = hasKakaoKey ? "카카오맵을 불러오지 못해 오픈스트리트맵으로 표시 중입니다." : "지도: 오픈스트리트맵"; }
+    else { $("status").className="status warn"; $("status").textContent="지도를 불러오지 못했습니다. 인터넷 연결을 확인하고 다시 열어주세요."; mapReady=null; return false; }
+    M.init($("map"),36.1199,128.1136);
+    M.onDrag(()=>setFollow(false));
+    return true;
+  })();
+  return mapReady;
+}
+function setFollow(v){ follow=v; $("recenter").setAttribute("aria-pressed",String(v)); $("recenter").textContent=v?"내 위치 따라가기":"내 위치로"; }
+function popupHtml(r){
+  let h=`<div class="pp"><b>${esc(r.n)}</b><div class="pc">${esc(D.emds[r.e])} · ${esc(D.cats[r.c])}</div><div class="pa">${esc(r.a)}</div>`;
+  if(r.d!=null) h+=`<div class="pd">${fmtKm(r.d)}</div>`;
+  if(r.g){const f=st.menu==="fuel"?st.fuel:1, p=r.g[f];
+    if(p!=null){const lit=st.liters, gain=Math.round(D.avg[f]*lit-p*lit/1.1);
+      h+=`<div class="pr">${FUELN[f]} <b>${won(p)}원</b> · 실질 ${won(Math.round(p/1.1))}원<br>${lit}L 기준 김천 평균 대비 ${gain>=0?won(gain)+"원 이득":won(-gain)+"원 손해"}`;
+      if(gain>0){const gl=gain/(p/1.1); h+=` (${gl.toFixed(1)}L${st.eff?`, 약 ${Math.round(gl*st.eff)}km`:""})`;}
+      h+=`</div>`;}}
+  h+=`<div class="pl">${r.k?`<a href="https://place.map.kakao.com/${r.k}" target="_blank" rel="noopener">가게 정보</a>`:""}<a href="https://map.kakao.com/link/to/${encodeURIComponent(r.kn||r.n)},${r.lat},${r.lng}" target="_blank" rel="noopener">카카오 길찾기</a></div></div>`;
+  return h;
+}
+function drawMap(rows){
+  lastRows=rows; if(!M) return;
+  const fuel=st.menu==="fuel"&&!st.q, pts=rows.filter(r=>r.lat!=null);
+  const minP=fuel&&pts.length?Math.min(...pts.map(r=>r.g[st.fuel])):null;
+  M.setMarkers(pts.map(r=>({lat:r.lat,lng:r.lng,
+    html: fuel ? `<div class="pin-price${r.g[st.fuel]===minP?" best":""}" title="${esc(r.n)}">${won(r.g[st.fuel])}</div>` : `<div class="pin${r.m===3?" loc":""}" title="${esc(r.n)}"></div>`,
+    onClick:()=>M.openCard(r.lat,r.lng,popupHtml(r))})));
+  const key=st.menu+"|"+st.sub+"|"+st.q;
+  if(key!==lastKey){ lastKey=key;
+    if(meLL&&follow) M.pan(meLL[0],meLL[1],true);
+    else if(pts.length) M.fit(pts.map(r=>[r.lat,r.lng]));
+  }
+}
+function updateMe(p){
+  const lat=p.coords.latitude, lng=p.coords.longitude; meAcc=p.coords.accuracy||30; meLL=[lat,lng];
+  if(M){ const first=!meShown; meShown=true; M.setMe(lat,lng,meAcc); if(follow) M.pan(lat,lng,first); }
+  if(sel.value===""||sel.value==="gps"){
+    if(!st.base||sel.value!=="gps"||hav(st.base.lat,st.base.lng,lat,lng)>0.05){
+      oG.hidden=false; sel.value="gps"; $("status").className="status"; $("status").textContent=`내 위치 기준 (오차 약 ${Math.round(meAcc)}m)`;
+      setBase({lat,lng});
+    }
+  }
+}
+function startWatch(){
+  if(watchId!=null||!navigator.geolocation) return;
+  try{ watchId=navigator.geolocation.watchPosition(updateMe,()=>{ $("status").className="status warn"; $("status").textContent="위치 정보를 받을 수 없습니다. 휴대폰의 위치(GPS)가 켜져 있는지, 이 앱에 위치 권한을 허용했는지 확인해주세요."; },{enableHighAccuracy:true,maximumAge:5000,timeout:20000}); }catch(e){}
+}
+function stopWatch(){ if(watchId!=null){ navigator.geolocation.clearWatch(watchId); watchId=null; } }
+async function setView(v){
+  st.view=v; store("kc-view",v);
+  document.querySelectorAll("[data-v]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.v===v)));
+  $("mapwrap").hidden=v!=="map"; $("list").hidden=v==="map"; document.body.classList.toggle("mapmode",v==="map");
+  if(v!=="map"){ stopWatch(); render(); return; }
+  const ok=await ensureMap(); if(!ok||st.view!=="map") return;
+  startWatch();
+  requestAnimationFrame(()=>{ M.relayout(); lastKey=null; render();
+    if(meLL&&!meShown){ meShown=true; M.setMe(meLL[0],meLL[1],meAcc); if(follow) M.pan(meLL[0],meLL[1],true); }
+    document.querySelector(".viewbar").scrollIntoView({block:"start"}); });
+}
+document.querySelectorAll("[data-v]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.v)));
+$("recenter").addEventListener("click",()=>{ setFollow(true); if(meLL&&M) M.pan(meLL[0],meLL[1],true); else startWatch(); });
+document.addEventListener("visibilitychange",()=>{ if(st.view!=="map") return; if(document.hidden) stopWatch(); else startWatch(); });
+if(load("kc-view")==="map") setView("map");
 // 매일 자동 갱신되는 prices.json이 있으면 그 가격으로 바꾼다
 fetch("prices.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(p=>{
   if(!p||!p.gas||!p.avg) return;
