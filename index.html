@@ -140,7 +140,7 @@ li.it{background:var(--surface);border:1px solid var(--line);border-radius:10px;
   <div class="note">
     <p>가맹점: 김천시청 홈페이지 김천사랑카드 가맹점 현황(2026.10.31 수집). 이후 가입·탈락은 반영되지 않았습니다.</p>
     <p>위치·가게 정보: 카카오 로컬 API로 이름과 주소를 맞춰 찾았습니다. ‘주소 위치’ 표시는 카카오맵에서 가게를 찾지 못해 주소 좌표로 표시한 곳입니다.</p>
-    <p>주유 가격·김천시 평균: 한국석유공사 오피넷, <span id="asof"></span> 기준 스냅샷. 실질가는 충전 10% 적립 반영(가격 ÷ 1.1). ‘평균 대비’는 김천시 평균 가격으로 같은 양을 현금·일반카드로 넣었을 때와 비교한 금액입니다.</p>
+    <p>주유 가격·김천시 평균: 한국석유공사 오피넷, <span id="asof"></span> 기준(하루 3번 자동 갱신). 실질가는 충전 10% 적립 반영(가격 ÷ 1.1). ‘평균 대비’는 김천시 평균 가격으로 같은 양을 현금·일반카드로 넣었을 때와 비교한 금액입니다.</p>
     <p>거리는 직선거리입니다. 주소로 정한 기준 위치는 가맹점 주소를 이용한 추정이라 실제 위치와 수십~수백 m 다를 수 있습니다.</p>
   </div>
 </div></main>
@@ -297,6 +297,14 @@ const sm=load("kc-menu"); if(sm && D.menus.some(m=>m[0]===sm)) st.menu=sm;
 const sb=load("kc-base"); if(sb && sb.startsWith("e:") && D.cen[sb.slice(2)]){sel.value=sb; const c=D.cen[sb.slice(2)]; st.base={lat:c[0],lng:c[1]}; $("status").textContent=`${sb.slice(2)} 중심 기준 직선거리입니다.`;}
 else $("status").textContent="‘내 위치’를 누르거나 읍면동을 골라주세요.";
 sync(); render();
+// 매일 자동 갱신되는 prices.json이 있으면 그 가격으로 바꾼다
+fetch("prices.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(p=>{
+  if(!p||!p.gas||!p.avg) return;
+  D.gas=p.gas; D.avg=p.avg; D.asof=p.asof;
+  R.forEach(r=>{ r.g = p.gas[r.n] || null; });
+  $("asof").textContent = p.updated || `${p.asof.slice(0,4)}.${p.asof.slice(4,6)}.${p.asof.slice(6)}`;
+  render();
+}).catch(()=>{});
 try{ if(navigator.permissions) navigator.permissions.query({name:"geolocation"}).then(p=>{ if(p.state==="granted") $("gps").click(); }); }catch(e){}
 </script>
 
