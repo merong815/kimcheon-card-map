@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#1d2a26">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="어데고 김천">
+<meta name="apple-mobile-web-app-title" content="어데GO 김천">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css">
@@ -16,9 +16,9 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
-<title>어데고 김천</title>
+<title>어데GO 김천</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&family=Jua&display=swap">
 <style>
 /* Layout: dark sign-board header, sticky control band (menu chips · base point · search), one ranked list of nearby merchants */
 :root{
@@ -97,8 +97,12 @@ li.it{background:var(--surface);border:1px solid var(--line);border-radius:10px;
 .pin.cd{background:#1c7ed6;width:12px;height:12px}
 .pin.ht{background:#f76707;width:12px;height:12px}
 .nearintro{padding:18px 4px;text-align:center}.nearintro p{margin:8px 0}
-.brand{font-size:22px;font-weight:900;letter-spacing:-.5px;margin:2px 0 8px;color:#fff}.brand span{color:#f5b335}
-.nbig{font-size:20px;font-weight:800;margin:4px 0 6px}
+/* 사람 손글씨 느낌: 제목·안내 문구에만(주소·시간 같은 정보는 읽기 쉬운 기본 글꼴 유지) */
+.brand,#secsub,.nbig,.nbig2,.ncard h2,.nmore,.btn.big,.charge,li.empty{font-family:"Jua",var(--f-body,system-ui),sans-serif;font-weight:400}
+.brand{font-size:28px;letter-spacing:-.3px;margin:0 0 4px;color:#fff;line-height:1.15}.brand b{color:#ff7a45;font-weight:400}.brand span{color:#f5b335}
+#secsub{font-size:15px}
+.nbig{font-size:28px;margin:4px 0 0;line-height:1.25}.nbig2{font-size:19px;margin:2px 0 8px;opacity:.75}
+.ncard h2{font-size:19px}.nmore{font-size:14px}.btn.big{font-size:18px}.charge{font-size:15px}li.empty{font-size:17px}
 .btn.big{font-size:16px;padding:12px 22px}
 .neargrid{display:grid;gap:10px;grid-template-columns:1fr}
 @media(min-width:720px){.neargrid{grid-template-columns:1fr 1fr}}
@@ -203,7 +207,7 @@ body.mapmode .ctl{position:static}
 
 
 <header><div class="wrap">
-  <h1 class="brand">어데고 <span>김천</span></h1>
+  <h1 class="brand">어데<b>GO</b> <span>김천</span></h1>
   <div class="secs" role="tablist" aria-label="정보 종류">
     <button class="sec" id="sec-near" data-sec="near" role="tab" aria-selected="true">내 주변</button>
     <button class="sec" id="sec-life" data-sec="life" role="tab" aria-selected="false">생활정보</button>
@@ -266,7 +270,7 @@ body.mapmode .ctl{position:static}
   <ol id="list"></ol>
   <button class="more" id="more" type="button" hidden>더 보기</button>
   <div class="note">
-    <p><b>어데고 김천</b>은 공공데이터를 모아 개인이 만든 비공식 앱입니다. 김천시의 공식 서비스가 아니며, 정보는 실제와 다를 수 있으니 중요한 일은 해당 기관에 확인하세요.</p>
+    <p><b>어데GO 김천</b>은 공공데이터를 모아 개인이 만든 비공식 앱입니다. 김천시의 공식 서비스가 아니며, 정보는 실제와 다를 수 있으니 중요한 일은 해당 기관에 확인하세요.</p>
     <p>가맹점: 김천시청 홈페이지 김천사랑카드 가맹점 현황(2026.10.31 수집). 이후 가입·탈락은 반영되지 않았습니다.</p>
     <p>위치·가게 정보: 카카오 로컬 API로 이름과 주소를 맞춰 찾았습니다. ‘주소 위치’ 표시는 카카오맵에서 가게를 찾지 못해 주소 좌표로 표시한 곳입니다.</p>
     <p>주유 가격·김천시 평균: 한국석유공사 오피넷, <span id="asof"></span> 기준(하루 3번 자동 갱신). 실질가는 충전 10% 적립 반영(가격 ÷ 1.1). ‘평균 대비’는 김천시 평균 가격으로 같은 양을 현금·일반카드로 넣었을 때와 비교한 금액입니다.</p>
@@ -487,7 +491,7 @@ function sync(){
   $("secsub").textContent=SECS[st.sec].sub();
   buildMenus(); $("menus").hidden = st.sec==="good"||st.sec==="near";
   $("charge").hidden = st.sec!=="card";
-  document.title = "어데고 김천";
+  document.title = "어데GO 김천";
   const nearMode=st.sec==="near"; ["subs","q"].forEach(id=>{ if(nearMode) $(id).hidden=true; }); $("q").hidden=nearMode;
   document.querySelectorAll(".viewbar,#summary,#mapwrap,#list,#more").forEach(e=>e.style.display=nearMode?"none":""); $("near").hidden=!nearMode;
   document.querySelectorAll("#menus .chip, #menus2 .chip").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.g ? b.dataset.g===lifeGroupOf(st.menu) : b.dataset.m===st.menu)));
@@ -574,7 +578,7 @@ function nearCats(now=new Date()){
 function renderNear(){
   const box=$("near"); box.textContent="";
   if(!st.base){
-    box.innerHTML=`<div class="nearintro"><p class="nbig">약국 어데고? 화장실 어데고?</p><p>위치만 알려주이소. 제일 가까운 병원·약국·화장실·무인민원발급기·쉼터, 지금 문 연 데부터 싹 찾아드릴게예.</p><button class="btn big" id="neargps" type="button">내 위치 찾아도 📍</button><p class="status">위치 권한을 허용하거나, 위에서 읍면동·주소로 기준 위치를 정할 수도 있습니다.</p></div>`;
+    box.innerHTML=`<div class="nearintro"><p class="nbig">여가 김천 어데GO?</p><p class="nbig2">약국 어데고? 화장실 어데고?</p><p>위치만 알려주이소. 제일 가까운 병원·약국·화장실·무인민원발급기·쉼터, 지금 문 연 데부터 싹 찾아드릴게예.</p><button class="btn big" id="neargps" type="button">내 위치 찾아도 📍</button><p class="status">위치 권한을 허용하거나, 위에서 읍면동·주소로 기준 위치를 정할 수도 있습니다.</p></div>`;
     $("neargps").addEventListener("click",()=>$("gps").click()); return;
   }
   const now=new Date();
