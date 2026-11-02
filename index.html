@@ -568,27 +568,30 @@ sel.addEventListener("change",()=>{
   else if(!v){st.base=null; store("kc-base",""); $("status").textContent="기준 위치를 고르면 가까운 순으로 정렬됩니다.";}
   st.shown=60; render();
 });
-let gpsBusy=false;
+let gpsBusy=false; window.__gpsBusy=false;
 $("gps").addEventListener("click",()=>{
   if(gpsBusy) return;
-  const s=$("status"); s.className="status"; s.textContent="위치를 찾는 중이에여… (처음엔 10초쯤 걸릴 수 있어여)";
-  const nb=document.getElementById("neargps"); if(nb){ nb.disabled=true; nb.textContent="⏳ 위치 찾는 중…"; }
-  const fail=()=>{gpsBusy=false; s.className="status warn"; s.textContent="위치 정보를 받지 못했습니다. 읍면동을 고르거나, 가게의 ‘여기 기준’을 눌러주세요."; if(st.sec==="near") render();};
+  const s=$("status"); s.className="status";
+  const nb=()=>document.getElementById("neargps");
+  const fail=()=>{gpsBusy=false; window.__gpsBusy=false; clearInterval(tick); s.className="status warn"; s.textContent="위치 정보를 받지 못했습니다. 읍면동을 고르거나, 가게의 ‘여기 기준’을 눌러주세요."; if(st.sec==="near") render();};
   if(!navigator.geolocation){fail();return}
-  gpsBusy=true;
-  let done=false;
-  const ok=p=>{ if(done)return; done=true; gpsBusy=false; clearTimeout(guard);
+  gpsBusy=true; window.__gpsBusy=true;
+  // 지난번 위치가 있으면 그걸로 먼저 바로 보여주고, 새 위치가 잡히면 바꿈
+  let last=null; try{ last=JSON.parse(load("kc-lastpos")||"null"); }catch(e){}
+  if(last && Date.now()-last.ts<7*864e5){ oG.hidden=false; sel.value="gps"; setBase({lat:last.lat,lng:last.lng}); s.textContent="지난번 위치로 먼저 보여드려여 · 지금 위치 찾는 중…"; }
+  else s.textContent="위치를 찾는 중이에여…";
+  const t0=Date.now(); const tick=setInterval(()=>{ const b=nb(); if(b){ b.disabled=true; b.textContent=`⏳ 위치 찾는 중… ${Math.round((Date.now()-t0)/1000)}초`; } },500);
+  let done=false, errs=0, wid=null;
+  const finish=()=>{ window.__gpsBusy=false; clearInterval(tick); clearTimeout(guard); if(wid!=null){ try{navigator.geolocation.clearWatch(wid);}catch(e){} wid=null; } };
+  const ok=p=>{ if(done)return; done=true; gpsBusy=false; finish();
+    try{ store("kc-lastpos",JSON.stringify({lat:p.coords.latitude,lng:p.coords.longitude,ts:Date.now()})); }catch(e){}
     oG.hidden=false; sel.value="gps"; store("kc-base","gps"); s.className="status"; s.textContent=`내 위치 기준 (오차 약 ${Math.round(p.coords.accuracy)}m)`;
     setBase({lat:p.coords.latitude,lng:p.coords.longitude}); try{ startWatch(); }catch(e){} };
-  // 허용 창을 읽는 동안 시간이 지나도 실패로 보지 않게 넉넉히(60초) 기다림
-  const guard=setTimeout(()=>{ if(!done){ done=true; fail(); } },60000);
-  // 1단계: 빠른 위치(와이파이·기지국, 최근 5분 위치 재사용) → 2단계: 실패하면 GPS로 다시
-  try{
-    navigator.geolocation.getCurrentPosition(ok,()=>{
-      if(done) return;
-      navigator.geolocation.getCurrentPosition(ok,()=>{ if(!done){ done=true; clearTimeout(guard); fail(); } },{enableHighAccuracy:true,timeout:25000,maximumAge:0});
-    },{enableHighAccuracy:false,timeout:15000,maximumAge:300000});
-  }catch(e){ clearTimeout(guard); done=true; fail(); }
+  const bad=()=>{ if(done) return; if(++errs>=2){ done=true; finish(); if(last) { gpsBusy=false; s.className="status warn"; s.textContent="지금 위치를 못 잡아서 지난번 위치로 보여드려여."; render(); } else fail(); } };
+  const guard=setTimeout(()=>{ if(!done){ done=true; finish(); if(last){ gpsBusy=false; render(); } else fail(); } },45000);
+  // 빠른 위치(와이파이·기지국·최근 위치)와 GPS를 동시에 요청해서 먼저 오는 걸 씀
+  try{ navigator.geolocation.getCurrentPosition(ok,bad,{enableHighAccuracy:false,timeout:12000,maximumAge:600000}); }catch(e){ bad(); }
+  try{ wid=navigator.geolocation.watchPosition(ok,bad,{enableHighAccuracy:true,timeout:40000,maximumAge:0}); }catch(e){ bad(); }
 });
 // address → base point, using merchant addresses already geocoded
 const roadRe=/([가-힣0-9]+(?:로|길))\s*(\d+)(?:-\d+)?/;
@@ -658,7 +661,7 @@ function renderNear(){
   const now=new Date();
   const bl=document.createElement("div"); bl.className="nbase";
   const isGps=sel.value==="gps";
-  bl.innerHTML=`📍 기준: <b>${isGps?"내 위치":esc((sel.value||"").replace(/^e:/,"")+" 중심")}</b>${isGps?"":` <button type="button" id="nbgps" class="nbbtn">내 위치로 바꾸기</button>`} <button type="button" id="nbemd" class="nbbtn">동네 다시 고르기</button>`;
+  bl.innerHTML=`📍 기준: <b>${isGps?"내 위치":esc((sel.value||"").replace(/^e:/,"")+" 중심")}</b>${window.__gpsBusy?' <span class="tag cl">⏳ 지금 위치 찾는 중… (지난번 위치로 먼저 보여드려여)</span>':""}${isGps?"":` <button type="button" id="nbgps" class="nbbtn">내 위치로 바꾸기</button>`} <button type="button" id="nbemd" class="nbbtn">동네 다시 고르기</button>`;
   box.appendChild(bl);
   if(!isGps) bl.querySelector("#nbgps").addEventListener("click",()=>$("gps").click());
   bl.querySelector("#nbemd").addEventListener("click",()=>{ const g=box.querySelector(".emdpick"); if(g){g.remove();return;} const d=document.createElement("div"); d.className="emdpick"; d.innerHTML=emdGrid(); bl.after(d); bindEmd(); });
