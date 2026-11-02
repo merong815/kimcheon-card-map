@@ -112,7 +112,21 @@ li.it{background:var(--surface);border:1px solid var(--line);border-radius:10px;
 .brand{font-size:28px;letter-spacing:-.3px;margin:0 0 4px;color:#fff;line-height:1.15}.brand b{color:#ff7a45;font-weight:400}.brand span{color:#f5b335}
 #secsub{font-size:15px}
 .nbig{font-size:28px;margin:4px 0 0;line-height:1.25}.nbig2{font-size:19px;margin:2px 0 8px;opacity:.75}
-.ncard h2{font-size:19px}.nmore{font-size:14px}.btn.big{font-size:18px}.charge{font-size:15px}li.empty{font-size:17px}
+.ncard h2{font-size:19px}.nmore{font-size:14px}.steps{text-align:left;max-width:420px;margin:12px auto;padding-left:24px;font-size:17px;line-height:1.6}
+.steps li{margin:6px 0}.steps small{display:block;font-size:14px;opacity:.75}
+.fakedlg{margin:8px 0 4px;border:1px solid var(--line);border-radius:16px;background:#fff;padding:10px 12px;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.fq{font-weight:700;margin-bottom:6px}.fo{border-radius:20px;padding:7px 12px;margin:4px 0;background:#eef1f0;text-align:center}
+.fo.hi{background:#ff7a45;color:#fff;font-weight:700}
+.gobtn{background:#ff7a45!important;color:#fff!important;border-color:#ff7a45!important;font-size:22px!important;padding:14px 28px!important;border-radius:16px!important}
+.or{margin:18px 0 8px;font-size:17px}
+.nwarn{background:#fff3e0;border:1px solid #f0c36d;border-radius:12px;padding:10px;font-size:16px}
+.emdgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;max-width:560px;margin:0 auto}
+.emdbtn{font:inherit;font-family:"Jua",sans-serif;font-size:18px;padding:12px 4px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer}
+.emdbtn:active{background:#ffe2d6}
+.nbase{font-size:15px;margin:0 0 10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.nbbtn{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:5px 11px;cursor:pointer}
+.emdpick{margin:0 0 12px}
+.btn.big{font-size:18px}.charge{font-size:15px}li.empty{font-size:17px}
 .btn.big{font-size:16px;padding:12px 22px}
 .neargrid{display:grid;gap:10px;grid-template-columns:1fr}
 @media(min-width:720px){.neargrid{grid-template-columns:1fr 1fr}}
@@ -546,7 +560,7 @@ sel.addEventListener("change",()=>{
 });
 $("gps").addEventListener("click",()=>{
   const s=$("status"); s.className="status"; s.textContent="위치를 확인하는 중…";
-  const fail=()=>{s.className="status warn"; s.textContent="이 화면에서는 위치 정보를 쓸 수 없습니다. 읍면동을 고르거나, 가게의 ‘여기 기준’을 눌러주세요.";};
+  const fail=()=>{s.className="status warn"; s.textContent="위치 정보를 받지 못했습니다. 읍면동을 고르거나, 가게의 ‘여기 기준’을 눌러주세요."; if(st.sec==="near") render();};
   if(!navigator.geolocation){fail();return}
   let done=false; const t=setTimeout(()=>{if(!done){done=true;fail()}},8000);
   try{navigator.geolocation.getCurrentPosition(p=>{if(done)return;done=true;clearTimeout(t);
@@ -607,11 +621,25 @@ function nearCats(now=new Date()){
 }
 function renderNear(){
   const box=$("near"); box.textContent="";
+  const emdGrid=()=>`<div class="emdgrid">${Object.keys(D.cen).sort((a,b)=>a.localeCompare(b,"ko")).map(e=>`<button type="button" class="emdbtn" data-e="${e}">${e}</button>`).join("")}</div>`;
+  const bindEmd=()=>box.querySelectorAll(".emdbtn").forEach(b=>b.addEventListener("click",()=>{ sel.value="e:"+b.dataset.e; sel.dispatchEvent(new Event("change")); window.scrollTo({top:0}); }));
   if(!st.base){
-    box.innerHTML=`<div class="nearintro"><p class="nbig">여가 김천 어데GO?</p><p class="nbig2">약국 어데고? 화장실 어데고?</p><p>위치만 알려주이소. 제일 가까운 병원·약국·화장실·무인민원발급기·쉼터, 지금 문 연 데부터 싹 찾아드릴게예.</p><button class="btn big" id="neargps" type="button">내 위치 찾아도 📍</button><p class="status">위치 권한을 허용하거나, 위에서 읍면동·주소로 기준 위치를 정할 수도 있습니다.</p></div>`;
-    $("neargps").addEventListener("click",()=>$("gps").click()); return;
+    const failed=$("status").classList.contains("warn");
+    box.innerHTML=`<div class="nearintro"><p class="nbig">여가 김천 어데GO?</p><p class="nbig2">약국 어데고? 화장실 어데고?</p>
+      ${failed?`<p class="nwarn">위치를 못 받았어예 😅<br>휴대폰 위치(GPS)가 꺼져 있거나, 허용을 안 누르셨을 수 있어예.<br>아래에서 <b>우리 동네</b>를 눌러도 됩니더.</p>`:""}
+      <ol class="steps"><li>아래 <b>주황 버튼</b>을 누르이소</li><li>휴대폰이 위치를 물어보면 <b>‘앱 사용 중에만 허용’</b>을 누르이소<div class="fakedlg"><div class="fq">어데GO 김천에서 이 기기의 위치에 액세스하도록 허용할까요?</div><div class="fo hi">앱 사용 중에만 허용 👈</div><div class="fo">이번만 허용</div><div class="fo">허용 안함</div></div><small>처음 한 번만 하면 다음부턴 안 물어봐예.</small></li></ol>
+      <button class="btn big gobtn" id="neargps" type="button">📍 내 위치 찾아도</button>
+      <p class="or">위치 허용이 어려우시면 ↓ <b>우리 동네</b>를 누르이소</p>${emdGrid()}</div>`;
+    $("neargps").addEventListener("click",()=>$("gps").click()); bindEmd(); return;
   }
+
   const now=new Date();
+  const bl=document.createElement("div"); bl.className="nbase";
+  const isGps=sel.value==="gps";
+  bl.innerHTML=`📍 기준: <b>${isGps?"내 위치":esc((sel.value||"").replace(/^e:/,"")+" 중심")}</b>${isGps?"":` <button type="button" id="nbgps" class="nbbtn">내 위치로 바꾸기</button>`} <button type="button" id="nbemd" class="nbbtn">동네 다시 고르기</button>`;
+  box.appendChild(bl);
+  if(!isGps) bl.querySelector("#nbgps").addEventListener("click",()=>$("gps").click());
+  bl.querySelector("#nbemd").addEventListener("click",()=>{ const g=box.querySelector(".emdpick"); if(g){g.remove();return;} const d=document.createElement("div"); d.className="emdpick"; d.innerHTML=emdGrid(); bl.after(d); bindEmd(); });
   const grid=document.createElement("div"); grid.className="neargrid";
   nearCats(now).forEach(c=>{
     let rows=R.filter(r=>r.menu===c.id&&r.lat!=null&&(!c.f||c.f(r)));
