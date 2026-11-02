@@ -626,10 +626,10 @@ function renderNear(){
   if(!st.base){
     const failed=$("status").classList.contains("warn");
     box.innerHTML=`<div class="nearintro"><p class="nbig">여가 김천 어데GO?</p><p class="nbig2">약국 어데고? 화장실 어데고?</p>
-      ${failed?`<p class="nwarn">위치를 못 받았어예 😅<br>휴대폰 위치(GPS)가 꺼져 있거나, 허용을 안 누르셨을 수 있어예.<br>아래에서 <b>우리 동네</b>를 눌러도 됩니더.</p>`:""}
-      <ol class="steps"><li>아래 <b>주황 버튼</b>을 누르이소</li><li>휴대폰이 위치를 물어보면 <b>‘앱 사용 중에만 허용’</b>을 누르이소<div class="fakedlg"><div class="fq">어데GO 김천에서 이 기기의 위치에 액세스하도록 허용할까요?</div><div class="fo hi">앱 사용 중에만 허용 👈</div><div class="fo">이번만 허용</div><div class="fo">허용 안함</div></div><small>처음 한 번만 하면 다음부턴 안 물어봐예.</small></li></ol>
-      <button class="btn big gobtn" id="neargps" type="button">📍 내 위치 찾아도</button>
-      <p class="or">위치 허용이 어려우시면 ↓ <b>우리 동네</b>를 누르이소</p>${emdGrid()}</div>`;
+      ${failed?`<p class="nwarn">위치를 못 받았어여 😅<br>휴대폰 위치(GPS)가 꺼져 있거나, 허용을 안 누르셨을 수도 있어여.<br>아래에서 <b>우리 동네</b>를 눌러도 되여.</p>`:""}
+      <ol class="steps"><li>아래 <b>주황 버튼</b>을 눌러여</li><li>휴대폰이 위치를 물어보면 <b>‘앱 사용 중에만 허용’</b>을 눌러여<div class="fakedlg"><div class="fq">어데GO 김천에서 이 기기의 위치에 액세스하도록 허용할까요?</div><div class="fo hi">앱 사용 중에만 허용 👈</div><div class="fo">이번만 허용</div><div class="fo">허용 안함</div></div><small>처음 한 번만 하면 다음부터 안 물어봐도 되여.</small></li></ol>
+      <button class="btn big gobtn" id="neargps" type="button">📍 내 위치를 찾아 주세여</button>
+      <p class="or">위치 허용이 어려우면 ↓ <b>우리 동네</b>를 눌러여</p>${emdGrid()}</div>`;
     $("neargps").addEventListener("click",()=>$("gps").click()); bindEmd(); return;
   }
 
@@ -647,12 +647,12 @@ function renderNear(){
     rows.sort((a,b)=>a.d-b.d);
     let pick = c.open ? rows.filter(r=>r.ps.open).slice(0,2) : rows.slice(0,2);
     let closedNote="";
-    if(c.open&&!pick.length){ pick=rows.slice(0,1); closedNote="지금 문 연 데가 없네예 😅 제일 가까운 데라도 보여드릴게예."; }
+    if(c.open&&!pick.length){ pick=rows.slice(0,1); closedNote="지금 문 연 데가 없어여 😅 제일 가까운 데라도 보여드릴게여."; }
     const card=document.createElement("section"); card.className="ncard";
     card.innerHTML=`<div class="nh"><h2>${esc(c.t)}</h2><button type="button" class="nmore">다 보까? →</button></div>`+
       (c.note?`<p class="nnote">${esc(c.note)}</p>`:"")+(closedNote?`<p class="nnote">${closedNote}</p>`:"")+
       pick.map(r=>`<div class="nitem"><div class="nl"><b>${esc(r.n)}</b>${r.ps?` <span class="tag ${r.ps.open?"op":"cl"}">${esc(r.ps.text)}</span>`:""}${r.hos&&r.hos.er?' <span class="tag er">응급실</span>':""}${PUBNIGHT[r.n]?' <span class="tag pn">공공심야약국</span>':""}<div class="na">${esc(r.a)}</div></div><div class="nr"><span class="nd">${fmtKm(r.d)}</span><a href="https://map.kakao.com/link/to/${encodeURIComponent(r.n)},${r.lat},${r.lng}" target="_blank" rel="noopener">길찾기</a>${r.ph&&!r.park?`<a href="${telHref(r.ph)}">전화</a>`:""}</div></div>`).join("")+
-      (pick.length?"":`<p class="nnote">가까운 데가 없네예.</p>`);
+      (pick.length?"":`<p class="nnote">가까운 데가 없어여.</p>`);
     card.querySelector(".nmore").addEventListener("click",()=>{ st.lifeMenu=c.id; setSec("life"); });
     grid.appendChild(card);
   });
@@ -695,7 +695,7 @@ function render(){
   if(st.menu==="repair"&&!st.q) sum=`<div class="sos"><b>차 섰나? 놀라지 말고 이 순서로!</b><br>① 안전한 곳으로 피하고 비상등·삼각대<br>② <b style="font-size:14px">가입한 자동차보험 긴급출동</b>(24시간, 보험증권·보험사 앱에 번호 있음)<br>③ 고속도로라면 한국도로공사 긴급견인 <a href="tel:15882504">☎ 1588-2504</a> — 승용차·1.4톤 이하, 가까운 휴게소·영업소까지 무료(연 2회)<br>④ 그다음 가까운 정비소 ↓ (밤·주말엔 대부분 문 닫아요)</div>`+sum;
   $("summary").innerHTML = sum;
   const list=$("list"); list.textContent="";
-  if(!rows.length){list.innerHTML='<li class="empty">찾는 데가 없네예 🤔 조건을 바꿔보이소.</li>'; $("more").hidden=true; return;}
+  if(!rows.length){list.innerHTML='<li class="empty">찾는 데가 없어여 🤔 조건을 바꿔 보세여.</li>'; $("more").hidden=true; return;}
   const minP = fuel && !st.q ? Math.min(...rows.map(r=>r.g[st.fuel])) : null;
   rows.slice(0,st.shown).forEach(r=>{
     const li=document.createElement("li"); li.className="it"+(r.good&&st.sec!=="good"?" good":"");
