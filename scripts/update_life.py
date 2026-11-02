@@ -3,7 +3,7 @@
 GitHub Actions에서 매일 실행된다. 공공 API에서 김천시 자료를 받아
 index.html 안에 들어 있는 데이터(const D = {...})의 해당 항목만 바꿔 쓴다.
 
-갱신 항목: 약국, 병원, 무인민원발급기, 도시공원, 민방위 대피시설, 전기차 충전소, 자동차 정비소, 공영주차장, 한파쉼터, 무더위쉼터
+갱신 항목: 아이 아플 때(소아과·응급실 목록, 김천+인근+대구), 약국, 병원, 무인민원발급기, 도시공원, 민방위 대피시설, 전기차 충전소, 자동차 정비소, 공영주차장, 한파쉼터, 무더위쉼터
 (공중화장실·관공서·관광·문화재는 손으로 관리 — 이 스크립트가 건드리지 않음)
 
 안전장치: 어떤 항목이든 받기에 실패하거나 개수가 기존의 60% 미만이면 그 항목은 기존 자료를 그대로 둔다.
@@ -178,6 +178,57 @@ def hosp(cx):
             out.append([n, a, tel(it.get("dutyTel1")), round(lat, 6), round(lng, 6), div, hrs8(it), er, cx.emd(lat, lng, a)])
         if len(its) < 100:
             break
+    return out
+
+
+# ---------- 아이 아플 때: 김천 + 인근 시군 + 대구 ----------
+KID_AREAS = [("경상북도", "김천시", "김천"), ("경상북도", "구미시", "구미"), ("경상북도", "칠곡군", "칠곡"),
+             ("경상북도", "상주시", "상주"), ("경상북도", "성주군", "성주"), ("충청북도", "영동군", "영동"),
+             ("대구광역시", "", "대구")]
+PED_RE = re.compile(r"소아|아동|어린이|키즈")
+
+
+def _area_items(base, q0, q1, extra=""):
+    out = []
+    for page in range(1, 6):
+        url = (f"{base}?serviceKey={q(KEY)}&Q0={q(q0)}" + (f"&Q1={q(q1)}" if q1 else "") +
+               f"{extra}&pageNo={page}&numOfRows=500")
+        its = items_xml(get(url, as_json=False))
+        out += its
+        if len(its) < 500:
+            break
+    return out
+
+
+def kid(cx):
+    """소아청소년과 진료과목이 있는 병·의원. 김천은 모두, 다른 곳은 이름에 소아·아동·어린이가 있거나 병원급 이상만."""
+    out = []
+    for q0, q1, rg in KID_AREAS:
+        its = _area_items("https://apis.data.go.kr/B552657/HsptlAsembySearchService/getHsptlMdcncListInfoInqire", q0, q1, "&QD=D002")
+        for it in its:
+            n, div = it.get("dutyName", ""), it.get("dutyDivNam", "")
+            ped = 1 if PED_RE.search(n) else 0
+            big = div in ("종합병원", "병원", "상급종합병원")
+            if div == "요양병원" or (rg != "김천" and not ped and not big):
+                continue
+            lat, lng = float(it.get("wgs84Lat") or 0), float(it.get("wgs84Lon") or 0)
+            if not lat:
+                continue
+            out.append([n, rg, div, it.get("dutyAddr", ""), tel(it.get("dutyTel1")), round(lat, 6), round(lng, 6), hrs8(it), ped])
+    return out
+
+
+def er(cx):
+    """응급실 목록(실시간 병상은 update_er.py가 er.json으로 따로 받음)."""
+    out = []
+    for q0, q1, rg in KID_AREAS:
+        its = _area_items("https://apis.data.go.kr/B552657/ErmctInfoInqireService/getEgytListInfoInqire", q0, q1)
+        for it in its:
+            lat, lng = float(it.get("wgs84Lat") or 0), float(it.get("wgs84Lon") or 0)
+            if not lat or not it.get("hpid"):
+                continue
+            out.append([it.get("dutyName", ""), it.get("dutyAddr", ""), it.get("dutyEmclsName", ""),
+                        tel(it.get("dutyTel3") or it.get("dutyTel1")), round(lat, 6), round(lng, 6), it["hpid"], rg])
     return out
 
 
@@ -435,7 +486,7 @@ def main():
         sys.exit("index.html에서 데이터(const D)를 찾지 못했습니다.")
     D = json.loads(m.group(1))
     cx = Ctx(D)
-    jobs = [("pharm", pharm), ("hosp", hosp), ("kiosk", kiosk), ("park", park), ("shelter", shelter), ("ev", ev), ("repair", repair), ("parking", parking)]
+    jobs = [("pharm", pharm), ("hosp", hosp), ("kiosk", kiosk), ("park", park), ("shelter", shelter), ("ev", ev), ("repair", repair), ("parking", parking), ("kid", kid), ("er", er)]
     if COLD_KEY:
         jobs.append(("cold", cold))
     if HEAT_KEY:
