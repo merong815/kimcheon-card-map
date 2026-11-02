@@ -3,7 +3,7 @@
 GitHub Actions에서 매일 실행된다. 공공 API에서 김천시 자료를 받아
 index.html 안에 들어 있는 데이터(const D = {...})의 해당 항목만 바꿔 쓴다.
 
-갱신 항목: 약국, 병원, 무인민원발급기, 도시공원, 민방위 대피시설, 전기차 충전소, 한파쉼터, 무더위쉼터
+갱신 항목: 약국, 병원, 무인민원발급기, 도시공원, 민방위 대피시설, 전기차 충전소, 자동차 정비소, 한파쉼터, 무더위쉼터
 (공중화장실·관공서·관광·문화재는 손으로 관리 — 이 스크립트가 건드리지 않음)
 
 안전장치: 어떤 항목이든 받기에 실패하거나 개수가 기존의 60% 미만이면 그 항목은 기존 자료를 그대로 둔다.
@@ -358,6 +358,41 @@ def heat(cx):
     return out
 
 
+RTY = {"1", "2", "3"}
+
+
+def repair(cx):
+    url = (f"https://api.data.go.kr/openapi/tn_pubr_public_auto_maintenance_company_api?serviceKey={q(KEY)}"
+           f"&type=json&pageNo=1&numOfRows=1000&insttCode={GC}")
+    its = get(url)["body"]["items"]["item"] or []
+    rows = cx.D["rows"]
+    norm = lambda s: re.sub(r"[\s()㈜\-·]|주식회사|부분정비(공장)?|정비(공장)?|자동차|카센[타터]", "", s or "")
+    out = []
+    for x in its:
+        if x.get("bsnSttus") != "1" or x.get("clsbizDate"):
+            continue
+        lat, lng = float(x.get("latitude") or 0), float(x.get("longitude") or 0)
+        if not lat:
+            continue
+        n = x.get("inspofcNm", "")
+        a = (x.get("rdnmadr") or x.get("lnmadr") or "").replace("경상북도 김천시 ", "")
+        nn, best = norm(n), None
+        for i, r in enumerate(rows):  # 김천사랑카드 가맹점과 이름·위치(250m)가 맞으면 연결
+            if not r[5] or hav(lat, lng, r[5], r[6]) > 0.25:
+                continue
+            for cand in (r[0], r[8]):
+                cn = norm(cand)
+                if not cand or not cn:
+                    continue
+                ok = (nn == cn) if (len(nn) < 3 or len(cn) < 3) else (nn in cn or cn in nn)
+                if ok:
+                    d = hav(lat, lng, r[5], r[6])
+                    if not best or d < best[0]:
+                        best = (d, i)
+        out.append([n, a, x.get("inspofcType", ""), round(lat, 6), round(lng, 6), best[1] if best else -1, cx.emd(lat, lng, a)])
+    return out
+
+
 def main():
     if not KEY:
         sys.exit("DATA_GO_KR_KEY 비밀값이 없습니다.")
@@ -367,7 +402,7 @@ def main():
         sys.exit("index.html에서 데이터(const D)를 찾지 못했습니다.")
     D = json.loads(m.group(1))
     cx = Ctx(D)
-    jobs = [("pharm", pharm), ("hosp", hosp), ("kiosk", kiosk), ("park", park), ("shelter", shelter), ("ev", ev)]
+    jobs = [("pharm", pharm), ("hosp", hosp), ("kiosk", kiosk), ("park", park), ("shelter", shelter), ("ev", ev), ("repair", repair)]
     if COLD_KEY:
         jobs.append(("cold", cold))
     if HEAT_KEY:
