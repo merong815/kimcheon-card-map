@@ -3,7 +3,7 @@
 GitHub Actions에서 매일 실행된다. 공공 API에서 김천시 자료를 받아
 index.html 안에 들어 있는 데이터(const D = {...})의 해당 항목만 바꿔 쓴다.
 
-갱신 항목: 약국, 병원, 무인민원발급기, 도시공원, 민방위 대피시설, 전기차 충전소, 자동차 정비소, 한파쉼터, 무더위쉼터
+갱신 항목: 약국, 병원, 무인민원발급기, 도시공원, 민방위 대피시설, 전기차 충전소, 자동차 정비소, 공영주차장, 한파쉼터, 무더위쉼터
 (공중화장실·관공서·관광·문화재는 손으로 관리 — 이 스크립트가 건드리지 않음)
 
 안전장치: 어떤 항목이든 받기에 실패하거나 개수가 기존의 60% 미만이면 그 항목은 기존 자료를 그대로 둔다.
@@ -393,6 +393,39 @@ def repair(cx):
     return out
 
 
+def parking(cx):
+    """공영주차장(표준데이터)만 갱신하고, 카카오에서 모은 기타 주차장(요금 정보 없음)은 그대로 둔다."""
+    url = (f"https://api.data.go.kr/openapi/tn_pubr_prkplce_info_api?serviceKey={q(KEY)}"
+           f"&type=json&pageNo=1&numOfRows=1000&insttCode={GC}")
+    its = get(url)["body"]["items"]["item"] or []
+    n_ = lambda v: int(float(v or 0))
+    off = []
+    for x in its:
+        lat, lng = float(x.get("latitude") or 0), float(x.get("longitude") or 0)
+        if not lat:
+            continue
+        a = (x.get("rdnmadr") or x.get("lnmadr") or "").replace("경상북도 김천시 ", "")
+        chg = x.get("parkingchrgeInfo") or ""
+        if chg == "무료":
+            fee = "무료"
+        else:
+            fee = f"기본 {n_(x.get('basicTime'))}분 {n_(x.get('basicCharge')):,}원 · 추가 {n_(x.get('addUnitTime'))}분당 {n_(x.get('addUnitCharge')):,}원"
+            if n_(x.get("dayCmmtkt")):
+                fee += f" · 1일 {n_(x.get('dayCmmtkt')):,}원"
+            if n_(x.get("monthCmmtkt")):
+                fee += f" · 월정기 {n_(x.get('monthCmmtkt')):,}원"
+        nm = x.get("prkplceNm", "")
+        nm = nm if "주차장" in nm else nm + " 공영주차장"
+        note = (x.get("spcmnt") or "").replace("+", ",").replace(" 50 할인", " 50% 할인")
+        off.append([nm, a, "공영·" + chg, x.get("prkplceType", ""), n_(x.get("prkcmprt")), fee, tel(x.get("phoneNumber")),
+                    round(lat, 6), round(lng, 6), "", cx.emd(lat, lng, a), note])
+    if not off:
+        raise RuntimeError("공영주차장 0곳")
+    keep = [o for o in cx.D.get("parking", []) if not o[2].startswith("공영·")
+            and not (o[2].startswith("공영(") and any(hav(o[7], o[8], f[7], f[8]) < 0.06 for f in off))]
+    return off + keep
+
+
 def main():
     if not KEY:
         sys.exit("DATA_GO_KR_KEY 비밀값이 없습니다.")
@@ -402,7 +435,7 @@ def main():
         sys.exit("index.html에서 데이터(const D)를 찾지 못했습니다.")
     D = json.loads(m.group(1))
     cx = Ctx(D)
-    jobs = [("pharm", pharm), ("hosp", hosp), ("kiosk", kiosk), ("park", park), ("shelter", shelter), ("ev", ev), ("repair", repair)]
+    jobs = [("pharm", pharm), ("hosp", hosp), ("kiosk", kiosk), ("park", park), ("shelter", shelter), ("ev", ev), ("repair", repair), ("parking", parking)]
     if COLD_KEY:
         jobs.append(("cold", cold))
     if HEAT_KEY:
