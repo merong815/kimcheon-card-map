@@ -111,6 +111,14 @@ li.it{background:var(--surface);border:1px solid var(--line);border-radius:10px;
 .brand,#secsub,.nbig,.nbig2,.ncard h2,.nmore,.btn.big,.charge,li.empty{font-family:"Jua",var(--f-body,system-ui),sans-serif;font-weight:400}
 .brand{font-size:28px;letter-spacing:-.3px;margin:0 0 4px;color:#fff;line-height:1.15}.brand b{color:#ff7a45;font-weight:400}.brand span{color:#f5b335}
 #secsub{font-size:15px}
+.mascot{display:inline-block;vertical-align:middle;line-height:0}.mascot svg{width:100%;height:auto}
+.mascot.wave{animation:wave 2.4s ease-in-out infinite;transform-origin:50% 90%}
+.mascot.look{animation:look 1.2s ease-in-out infinite;transform-origin:50% 90%}
+.mascot.tilt{transform:rotate(-12deg)}
+@keyframes wave{0%,100%{transform:rotate(0)}25%{transform:rotate(-6deg)}75%{transform:rotate(6deg)}}
+@keyframes look{0%,100%{transform:translateX(0)}50%{transform:translateX(4px) rotate(4deg)}}
+@media (prefers-reduced-motion:reduce){.mascot.wave,.mascot.look{animation:none}}
+.brand .bm{display:inline-block;width:30px;vertical-align:-4px;margin-right:6px;line-height:0}.brand .bm svg{width:100%;height:auto}
 .nbig{font-size:28px;margin:4px 0 0;line-height:1.25}.nbig2{font-size:19px;margin:2px 0 8px;opacity:.75}
 .ncard h2{font-size:19px}.nmore{font-size:14px}.steps{text-align:left;max-width:420px;margin:12px auto;padding-left:24px;font-size:17px;line-height:1.6}
 .steps li{margin:6px 0}.steps small{display:block;font-size:14px;opacity:.75}
@@ -144,6 +152,8 @@ li.it{background:var(--surface);border:1px solid var(--line);border-radius:10px;
 .nr .nd{font-family:var(--f-num);font-weight:700}
 .nnote{font-size:12.5px;opacity:.75;margin:2px 0 4px}
 .pin.pkf{background:#1971c2;width:13px;height:13px;border-radius:3px}.pin.pkp{background:#1971c2;width:13px;height:13px;border-radius:3px;opacity:.6}
+.pin-price.nm{background:#6b7280!important;border-color:#6b7280!important}
+.memtoggle{font-weight:700}
 .pin.rp{background:#495057;width:13px;height:13px;border-radius:3px}
 .sos{border:1px solid #f0c36d;background:#fff8e6;border-radius:12px;padding:10px 12px;margin:0 0 10px;font-size:13.5px;line-height:1.55}
 .sos b{font-family:"Jua",sans-serif;font-weight:400;font-size:16px}
@@ -246,7 +256,7 @@ body.compact .ctlopen{display:inline-block;position:absolute;right:12px;top:6px;
 
 
 <header><div class="wrap">
-  <h1 class="brand">어데<b>GO</b> <span>김천</span></h1>
+  <h1 class="brand"><span class="bm"></span>어데<b>GO</b> <span>김천</span></h1>
   <div class="secs" role="tablist" aria-label="정보 종류">
     <button class="sec" id="sec-near" data-sec="near" role="tab" aria-selected="true">내 주변</button>
     <button class="sec" id="sec-life" data-sec="life" role="tab" aria-selected="false">생활정보</button>
@@ -276,6 +286,7 @@ body.compact .ctlopen{display:inline-block;position:absolute;right:12px;top:6px;
       <button id="fuel-g" data-f="2" aria-pressed="false">휘발유</button>
       <button id="fuel-l" data-f="3" aria-pressed="false">LPG</button>
     </div>
+    <label class="toggle memtoggle" for="memonly"><input type="checkbox" id="memonly" checked> 김천사랑카드 가맹점만</label>
     <div class="seg" role="group" aria-label="정렬">
       <button id="sort-near" data-s="near" aria-pressed="true">가까운 순</button>
       <button id="sort-cheap" data-s="cheap" aria-pressed="false">싼 순</button>
@@ -322,6 +333,7 @@ body.compact .ctlopen{display:inline-block;position:absolute;right:12px;top:6px;
     <p>한파쉼터·무더위쉼터: 행정안전부 자료(재난안전데이터공유플랫폼, 2026년 지정분). 운영기간은 해마다 정해지며, 경로당은 운영시간이 자료에 없어 현장 확인이 필요합니다.</p>
     <p>자동차 정비소: 전국자동차정비업체표준데이터(김천시, 영업 중인 곳만, 2026.10.18 기준). 원자료에 전화번호·영업시간이 없어 김천사랑카드 가맹점과 이름·위치가 맞는 곳만 전화·가게정보를 연결했습니다. 한국도로공사 긴급견인(1588-2504)은 고속도로에서 승용차·1.4톤 이하 화물차를 가까운 휴게소·졸음쉼터·영업소까지 무료로 옮겨주며 차량당 연 2회까지입니다(2026.10 언론 보도 기준).</p>
     <p>주차장: 공영 34곳은 전국주차장정보표준데이터(김천시, 2026.10.13 기준, 요금·면수 포함). 그 밖의 공영·민영 주차장은 카카오 장소 정보(2026.11.2 수집)로 요금·운영시간 정보가 없어 현장 확인이 필요합니다.</p>
+    <p>비가맹 주유소: 오피넷에 등록된 김천시 주유소 중 김천사랑카드 가맹점이 아닌 곳(하루 3번 자동 갱신). ‘김천사랑카드 가맹점만’ 체크를 끄면 함께 보입니다. 비가맹점은 카드 10% 적립이 없어 실제 결제가 그대로 비용입니다.</p>
     <p>공중화장실: 공공데이터포털 전국공중화장실표준데이터(김천시 등록분, 데이터 기준일 2025.6.30). 개방화장실은 민간·공공 건물의 화장실을 개방한 곳입니다.</p>
     <p id="lifeasof"></p>
     <p>약국: 국립중앙의료원 전국 약국 정보(2026.11.1 수집). 운영시간은 약국 사정에 따라 다를 수 있으니 방문 전 전화로 확인하세요. 공휴일은 2027년 2월까지 반영했습니다. 공공심야약국(재창·새서울·이연)은 김천시 안내 기준이며, 새서울약국은 약국 공개 자료에 없어 김천시 안내 정보만 표시합니다.</p>
@@ -534,6 +546,8 @@ function setSec(sec){
   sync(); render(); window.scrollTo({top:0});
 }
 document.querySelectorAll("[data-sec]").forEach(b=>b.addEventListener("click",()=>setSec(b.dataset.sec)));
+st.memOnly = load("kc-memonly")!=="0"; $("memonly").checked=st.memOnly;
+$("memonly").addEventListener("change",e=>{ st.memOnly=e.target.checked; store("kc-memonly",st.memOnly?"1":"0"); st.shown=60; if(st.view==="map") lastKey=null; render(); });
 $("openonly").addEventListener("change",e=>{ st.openOnly=e.target.checked; st.shown=60; render(); });
 $("lateonly").addEventListener("change",e=>{ st.lateOnly=e.target.checked; st.shown=60; render(); });
 $("holonly").addEventListener("change",e=>{ st.holOnly=e.target.checked; st.shown=60; render(); });
@@ -545,7 +559,7 @@ function sync(){
   $("secsub").textContent=SECS[st.sec].sub();
   buildMenus(); $("menus").hidden = st.sec==="good"||st.sec==="near";
   $("charge").hidden = st.sec!=="card";
-  document.title = "어데GO 김천"; document.body.classList.toggle("life",st.sec==="life");
+  document.title = "어데GO 김천"; const bm=document.querySelector(".brand .bm"); if(bm&&!bm.firstChild) bm.innerHTML=MASCOT; document.body.classList.toggle("life",st.sec==="life");
   const nearMode=st.sec==="near"; ["subs","q"].forEach(id=>{ if(nearMode) $(id).hidden=true; }); $("q").hidden=nearMode;
   document.querySelectorAll(".viewbar,#summary,#mapwrap,#list,#more").forEach(e=>e.style.display=nearMode?"none":""); $("near").hidden=!nearMode; document.querySelector(".ctl").style.display=nearMode?"none":"";
   document.querySelectorAll("#menus .chip, #menus2 .chip").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.g ? b.dataset.g===lifeGroupOf(st.menu) : b.dataset.m===st.menu)));
@@ -630,6 +644,9 @@ function hav(a,b,c,d){const R=6371,r=Math.PI/180,x=(c-a)*r,y=(d-b)*r;const h=Mat
 const fmtKm = km => km<1? Math.round(km*1000)+"m" : km.toFixed(1)+"km";
 
 // ── 내 주변: 분류마다 가장 가까운 곳(문 연 곳 우선)을 한 장에 ──
+const MASCOT="<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 300 330\" width=\"300\" height=\"330\"><defs><radialGradient id=\"gb\" cx=\"35%\" cy=\"30%\" r=\"75%\"><stop offset=\"0\" stop-color=\"#e9f7a8\"/><stop offset=\".55\" stop-color=\"#bfe06a\"/><stop offset=\"1\" stop-color=\"#93c247\"/></radialGradient></defs><ellipse cx=\"150\" cy=\"316\" rx=\"62\" ry=\"9\" fill=\"#000\" opacity=\".12\"/><path d=\"M150 94q-2-30 18-46\" stroke=\"#7a5230\" stroke-width=\"7\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M166 56q38-28 70 -2q-36 28-70 2z\" fill=\"#5fb94e\"/><path d=\"M168 56q30-4 64 -2\" stroke=\"#3f8f37\" stroke-width=\"2\" fill=\"none\"/><path d=\"M140 72q-26-8-30 14q-3 14 10 14\" stroke=\"#7fbf3f\" stroke-width=\"3.5\" fill=\"none\" stroke-linecap=\"round\"/><ellipse cx=\"150\" cy=\"118\" rx=\"30\" ry=\"34\" fill=\"url(#gb)\" stroke=\"#86b33e\" stroke-width=\"1.5\"/><ellipse cx=\"139.5\" cy=\"104.4\" rx=\"8.4\" ry=\"6.12\" fill=\"#fff\" opacity=\".55\" transform=\"rotate(-25 139.5 104.4)\"/><ellipse cx=\"110\" cy=\"128\" rx=\"29\" ry=\"33\" fill=\"url(#gb)\" stroke=\"#86b33e\" stroke-width=\"1.5\"/><ellipse cx=\"99.85\" cy=\"114.8\" rx=\"8.120000000000001\" ry=\"5.9399999999999995\" fill=\"#fff\" opacity=\".55\" transform=\"rotate(-25 99.85 114.8)\"/><ellipse cx=\"190\" cy=\"128\" rx=\"29\" ry=\"33\" fill=\"url(#gb)\" stroke=\"#86b33e\" stroke-width=\"1.5\"/><ellipse cx=\"179.85\" cy=\"114.8\" rx=\"8.120000000000001\" ry=\"5.9399999999999995\" fill=\"#fff\" opacity=\".55\" transform=\"rotate(-25 179.85 114.8)\"/><ellipse cx=\"92\" cy=\"170\" rx=\"28\" ry=\"32\" fill=\"url(#gb)\" stroke=\"#86b33e\" stroke-width=\"1.5\"/><ellipse cx=\"82.2\" cy=\"157.2\" rx=\"7.840000000000001\" ry=\"5.76\" fill=\"#fff\" opacity=\".55\" transform=\"rotate(-25 82.2 157.2)\"/><ellipse cx=\"131\" cy=\"166\" rx=\"30\" ry=\"34\" fill=\"url(#gb)\" stroke=\"#86b33e\" stroke-width=\"1.5\"/><ellipse cx=\"120.5\" cy=\"152.4\" rx=\"8.4\" ry=\"6.12\" fill=\"#fff\" opacity=\".55\" transform=\"rotate(-25 120.5 152.4)\"/><ellipse cx=\"170\" cy=\"166\" rx=\"30\" ry=\"34\" fill=\"url(#gb)\" stroke=\"#86b33e\" stroke-width=\"1.5\"/><ellipse cx=\"159.5\" cy=\"152.4\" rx=\"8.4\" ry=\"6.12\" fill=\"#fff\" opacity=\".55\" transform=\"rotate(-25 159.5 152.4)\"/><ellipse cx=\"208\" cy=\"170\" rx=\"28\" ry=\"32\" fill=\"url(#gb)\" stroke=\"#86b33e\" stroke-width=\"1.5\"/><ellipse cx=\"198.2\" cy=\"157.2\" rx=\"7.840000000000001\" ry=\"5.76\" fill=\"#fff\" opacity=\".55\" transform=\"rotate(-25 198.2 157.2)\"/><ellipse cx=\"112\" cy=\"210\" rx=\"29\" ry=\"33\" fill=\"url(#gb)\" stroke=\"#86b33e\" stroke-width=\"1.5\"/><ellipse cx=\"101.85\" cy=\"196.8\" rx=\"8.120000000000001\" ry=\"5.9399999999999995\" fill=\"#fff\" opacity=\".55\" transform=\"rotate(-25 101.85 196.8)\"/><ellipse cx=\"150\" cy=\"208\" rx=\"31\" ry=\"35\" fill=\"url(#gb)\" stroke=\"#86b33e\" stroke-width=\"1.5\"/><ellipse cx=\"139.15\" cy=\"194\" rx=\"8.680000000000001\" ry=\"6.3\" fill=\"#fff\" opacity=\".55\" transform=\"rotate(-25 139.15 194)\"/><ellipse cx=\"188\" cy=\"210\" rx=\"29\" ry=\"33\" fill=\"url(#gb)\" stroke=\"#86b33e\" stroke-width=\"1.5\"/><ellipse cx=\"177.85\" cy=\"196.8\" rx=\"8.120000000000001\" ry=\"5.9399999999999995\" fill=\"#fff\" opacity=\".55\" transform=\"rotate(-25 177.85 196.8)\"/><ellipse cx=\"131\" cy=\"250\" rx=\"28\" ry=\"32\" fill=\"url(#gb)\" stroke=\"#86b33e\" stroke-width=\"1.5\"/><ellipse cx=\"121.2\" cy=\"237.2\" rx=\"7.840000000000001\" ry=\"5.76\" fill=\"#fff\" opacity=\".55\" transform=\"rotate(-25 121.2 237.2)\"/><ellipse cx=\"169\" cy=\"250\" rx=\"28\" ry=\"32\" fill=\"url(#gb)\" stroke=\"#86b33e\" stroke-width=\"1.5\"/><ellipse cx=\"159.2\" cy=\"237.2\" rx=\"7.840000000000001\" ry=\"5.76\" fill=\"#fff\" opacity=\".55\" transform=\"rotate(-25 159.2 237.2)\"/><ellipse cx=\"150\" cy=\"286\" rx=\"25\" ry=\"28\" fill=\"url(#gb)\" stroke=\"#86b33e\" stroke-width=\"1.5\"/><ellipse cx=\"141.25\" cy=\"274.8\" rx=\"7.000000000000001\" ry=\"5.04\" fill=\"#fff\" opacity=\".55\" transform=\"rotate(-25 141.25 274.8)\"/><g><ellipse cx=\"124\" cy=\"178\" rx=\"10\" ry=\"12.5\" fill=\"#1d2a26\"/><ellipse cx=\"176\" cy=\"178\" rx=\"10\" ry=\"12.5\" fill=\"#1d2a26\"/><circle cx=\"127.5\" cy=\"173\" r=\"3.8\" fill=\"#fff\"/><circle cx=\"179.5\" cy=\"173\" r=\"3.8\" fill=\"#fff\"/></g><ellipse cx=\"104\" cy=\"204\" rx=\"13\" ry=\"8\" fill=\"#ff9aa8\" opacity=\".75\"/><ellipse cx=\"196\" cy=\"204\" rx=\"13\" ry=\"8\" fill=\"#ff9aa8\" opacity=\".75\"/><path d=\"M137 204q13 13 26 0\" stroke=\"#1d2a26\" stroke-width=\"5\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M66 196q-26 0-34 -24\" stroke=\"#93c247\" stroke-width=\"12\" fill=\"none\" stroke-linecap=\"round\"/><circle cx=\"30\" cy=\"168\" r=\"9\" fill=\"#93c247\"/><g transform=\"translate(206 204) rotate(10)\"><rect x=\"0\" y=\"0\" width=\"74\" height=\"54\" rx=\"7\" fill=\"#fff\" stroke=\"#1d2a26\" stroke-width=\"3\"/><path d=\"M8 42 L26 20 L40 33 L62 12\" stroke=\"#5fb94e\" stroke-width=\"4\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M54 6c-7 0-12 5-12 11 0 8 12 17 12 17s12-9 12-17c0-6-5-11-12-11z\" fill=\"#ff7a45\"/><circle cx=\"54\" cy=\"17\" r=\"4\" fill=\"#fff\"/></g><path d=\"M232 196q-10 6-18 14\" stroke=\"#93c247\" stroke-width=\"12\" fill=\"none\" stroke-linecap=\"round\"/></svg>";
+const mascot=(cls,w)=>`<span class="mascot ${cls||""}" style="width:${w}px">${MASCOT}</span>`;
+const effP=(r,f)=>r.gasNM?r.g[f]:r.g[f]/1.1;
 function nearCats(now=new Date()){
   const mo=now.getMonth()+1;
   const cats=[
@@ -649,7 +666,7 @@ function renderNear(){
   const bindEmd=()=>box.querySelectorAll(".emdbtn").forEach(b=>b.addEventListener("click",()=>{ sel.value="e:"+b.dataset.e; sel.dispatchEvent(new Event("change")); window.scrollTo({top:0}); }));
   if(!st.base){
     const failed=$("status").classList.contains("warn");
-    box.innerHTML=`<div class="nearintro"><p class="nbig">여가 김천 어데GO?</p><p class="nbig2">약국 어데고? 화장실 어데고?</p>
+    box.innerHTML=`<div class="nearintro">${mascot("wave",150)}<p class="nbig">여가 김천 어데GO?</p><p class="nbig2">약국 어데고? 화장실 어데고?</p>
       ${failed?`<p class="nwarn">위치를 못 받았어여 😅<br>휴대폰 위치(GPS)가 꺼져 있거나, 허용을 안 누르셨을 수도 있어여.<br>아래에서 <b>우리 동네</b>를 눌러도 되여.</p>`:""}
       <button class="btn big gobtn" id="neargps" type="button">📍 내 위치 찾기</button>
       <p class="hint">누르고 나서 휴대폰이 물어보면 <b>‘앱 사용 중에만 허용’</b>을 눌러여.<br><small>처음 한 번만 하면 다음부터 안 물어봐도 되여.</small></p>
@@ -661,7 +678,7 @@ function renderNear(){
   const now=new Date();
   const bl=document.createElement("div"); bl.className="nbase";
   const isGps=sel.value==="gps";
-  bl.innerHTML=`📍 기준: <b>${isGps?"내 위치":esc((sel.value||"").replace(/^e:/,"")+" 중심")}</b>${window.__gpsBusy?' <span class="tag cl">⏳ 지금 위치 찾는 중… (지난번 위치로 먼저 보여드려여)</span>':""}${isGps?"":` <button type="button" id="nbgps" class="nbbtn">내 위치로 바꾸기</button>`} <button type="button" id="nbemd" class="nbbtn">동네 다시 고르기</button>`;
+  bl.innerHTML=`📍 기준: <b>${isGps?"내 위치":esc((sel.value||"").replace(/^e:/,"")+" 중심")}</b>${window.__gpsBusy?' '+mascot("look",34)+' <span class="tag cl">지금 위치 찾는 중… (지난번 위치로 먼저 보여드려여)</span>':""}${isGps?"":` <button type="button" id="nbgps" class="nbbtn">내 위치로 바꾸기</button>`} <button type="button" id="nbemd" class="nbbtn">동네 다시 고르기</button>`;
   box.appendChild(bl);
   if(!isGps) bl.querySelector("#nbgps").addEventListener("click",()=>$("gps").click());
   bl.querySelector("#nbemd").addEventListener("click",()=>{ const g=box.querySelector(".emdpick"); if(g){g.remove();return;} const d=document.createElement("div"); d.className="emdpick"; d.innerHTML=emdGrid(); bl.after(d); bindEmd(); });
@@ -700,7 +717,7 @@ function render(){
   if(st.sec==="near"){ renderNear(); return; }
   const fuel = st.menu==="fuel";
   let rows = R.filter(r=> inSection(r) && (st.q ? true : inMenu(r,st.menu)) && (st.sub==null || r.c===st.sub) && (!st.q || r.s.includes(st.q)));
-  if(fuel && !st.q) rows = rows.filter(r=>r.g && r.g[st.fuel]!=null);
+  if(fuel && !st.q) rows = rows.filter(r=>r.g && r.g[st.fuel]!=null && (!st.memOnly || !r.gasNM));
   if(st.sec==="life"&&st.menu==="ev"){ if(st.evPublic) rows=rows.filter(r=>!r.ev.lim); if(st.evFast) rows=rows.filter(r=>r.ev.fast>0); }
   if(st.sec==="life"&&HRS_MENUS.includes(st.menu)&&!st.q){ const now=new Date(), di=dayIdx(now);
     if(st.menu==="pharm"){ rows.forEach(r=>{ r.ps=pharmState(r,now); });
@@ -710,18 +727,19 @@ function render(){
     $("nowtxt").textContent=`기준: ${dayIdx(now)===7?"공휴일":DAYN[dayIdx(now)]+"요일"} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`; }
   rows.forEach(r=>{ r.d = (st.base && r.lat!=null) ? hav(st.base.lat,st.base.lng,r.lat,r.lng) : null; });
   const cheap = fuel && !st.q && (st.sort==="cheap" || !st.base);
-  rows.sort((a,b)=> cheap ? (a.g[st.fuel]-b.g[st.fuel]) || ((a.d??1e9)-(b.d??1e9))
+  rows.sort((a,b)=> cheap ? (effP(a,st.fuel)-effP(b,st.fuel)) || ((a.d??1e9)-(b.d??1e9))
                           : ((a.d??1e9)-(b.d??1e9)) || a.n.localeCompare(b.n,"ko"));
   if(st.view==="map") drawMap(rows);
   const label = st.q ? `‘${st.q}’ 검색 결과` : st.sec==="good" ? "착한가격업소" : st.sec==="her" ? (HER_MENUS.find(m=>m[0]===st.menu)||[])[1] : st.sec==="life" ? (st.menu==="pharm"&&st.openOnly?"지금 영업 중인 약국":st.menu==="office"&&st.openOnly?"지금 운영 중인 관공서":st.menu==="hosp"&&st.openOnly?"지금 진료 중인 병원":st.menu==="kiosk"&&st.openOnly?"지금 이용 가능한 발급기":(LIFE_MENUS.find(m=>m[0]===st.menu)||[])[1]) : st.menu==="good" ? "착한가격업소" : (D.menus.find(m=>m[0]===st.menu)||[])[1];
   let sum = `<span>${label} <b>${won(rows.length)}</b>${st.menu==="heritage"?"건":"곳"}</span>`;
-  if(fuel && !st.q && rows.length){const mn=rows.reduce((m,r)=>r.g[st.fuel]<m.g[st.fuel]?r:m); const av=D.avg[st.fuel]; sum+=` · 김천시 평균 ${FUELN[st.fuel]} <b>${won2(av)}원</b> · 가맹 최저 <b>${won(mn.g[st.fuel])}원</b>(${mn.g[0]})에서 ${st.liters}L 넣으면 평균 대비 <b>${won(Math.round(av*st.liters-mn.g[st.fuel]*st.liters/1.1))}원</b> 이득`; const gl=(av*st.liters-mn.g[st.fuel]*st.liters/1.1)/(mn.g[st.fuel]/1.1); if(gl>0) sum+=` = <b>${gl.toFixed(1)}L</b> 더${st.eff?` (약 <b>${Math.round(gl*st.eff)}km</b>)`:""}`;}
+  if(fuel && !st.q && rows.length){const mn=rows.reduce((m,r)=>effP(r,st.fuel)<effP(m,st.fuel)?r:m); const av=D.avg[st.fuel], ep=effP(mn,st.fuel); sum+=` · 김천시 평균 ${FUELN[st.fuel]} <b>${won2(av)}원</b> · ${st.memOnly?"가맹 최저":"실질 최저"} <b>${won(mn.g[st.fuel])}원</b>(${mn.g[0]}${mn.gasNM?", 가맹 아님":""})에서 ${st.liters}L 넣으면 평균 대비 <b>${won(Math.round(av*st.liters-ep*st.liters))}원</b> 이득`; const gl=(av*st.liters-ep*st.liters)/ep; if(gl>0) sum+=` = <b>${gl.toFixed(1)}L</b> 더${st.eff?` (약 <b>${Math.round(gl*st.eff)}km</b>)`:""}`;}
   if(!st.base) sum += ` · <span>기준 위치를 고르면 가까운 순으로 정렬됩니다.</span>`;
+  if(fuel && !st.q && !st.memOnly && !R.some(r=>r.gasNM)) sum += ` · <span>비가맹 주유소 가격은 다음 자동 갱신(하루 3번) 뒤부터 보여여.</span>`;
   if(st.menu==="repair"&&!st.q) sum=`<div class="sos"><b>차 섰나? 놀라지 말고 이 순서로!</b><br>① 안전한 곳으로 피하고 비상등·삼각대<br>② <b style="font-size:14px">가입한 자동차보험 긴급출동</b>(24시간, 보험증권·보험사 앱에 번호 있음)<br>③ 고속도로라면 한국도로공사 긴급견인 <a href="tel:15882504">☎ 1588-2504</a> — 승용차·1.4톤 이하, 가까운 휴게소·영업소까지 무료(연 2회)<br>④ 그다음 가까운 정비소 ↓ (밤·주말엔 대부분 문 닫아요)</div>`+sum;
   $("summary").innerHTML = sum;
   const list=$("list"); list.textContent="";
-  if(!rows.length){list.innerHTML='<li class="empty">찾는 데가 없어여 🤔 조건을 바꿔 보세여.</li>'; $("more").hidden=true; return;}
-  const minP = fuel && !st.q ? Math.min(...rows.map(r=>r.g[st.fuel])) : null;
+  if(!rows.length){list.innerHTML='<li class="empty">'+mascot("tilt",90)+'<br>찾는 데가 없어여 🤔 조건을 바꿔 보세여.</li>'; $("more").hidden=true; return;}
+  const minP = fuel && !st.q ? Math.min(...rows.map(r=>effP(r,st.fuel))) : null;
   rows.slice(0,st.shown).forEach(r=>{
     const li=document.createElement("li"); li.className="it"+(r.good&&st.sec!=="good"?" good":"");
     const q=encodeURIComponent(r.kn||r.n);
@@ -729,15 +747,15 @@ function render(){
     const route = r.lat!=null ? `<a href="https://map.kakao.com/link/to/${q},${r.lat},${r.lng}" target="_blank" rel="noopener">카카오 길찾기</a>` : "";
     const naver = `<a href="https://map.naver.com/p/search/${encodeURIComponent("김천 "+r.n)}" target="_blank" rel="noopener">네이버지도</a>`;
     let price="";
-    if(r.g){const p=r.g[st.menu==="fuel"?st.fuel:1]; if(p!=null){ const f=st.menu==="fuel"?st.fuel:1, L=st.liters, av=D.avg[f], avgCost=Math.round(av*L), cardCost=Math.round(p*L/1.1), gain=avgCost-cardCost;
-      price=`<div class="price"><div class="board"><span class="p">${won(p)}</span><span class="r">실질 ${won(Math.round(p/1.1))}</span></div>${r.g[4]<D.asof?`<span class="tag old">${r.g[4].slice(4,6)}.${r.g[4].slice(6)} 가격</span>`:""}</div>
+    if(r.g){const p=r.g[st.menu==="fuel"?st.fuel:1]; if(p!=null){ const f=st.menu==="fuel"?st.fuel:1, L=st.liters, av=D.avg[f], avgCost=Math.round(av*L), ep=effP(r,f), cardCost=Math.round(ep*L), gain=avgCost-cardCost;
+      price=`<div class="price"><div class="board"><span class="p">${won(p)}</span>${r.gasNM?'<span class="r">카드 적립 없음</span>':`<span class="r">실질 ${won(Math.round(p/1.1))}</span>`}</div>${r.g[4]&&r.g[4]<D.asof?`<span class="tag old">${r.g[4].slice(4,6)}.${r.g[4].slice(6)} 가격</span>`:""}</div>
       <dl class="calc"><dt>김천 평균 ${FUELN[f]} ${won2(av)}원 × ${L}L</dt><dd>${won(avgCost)}원</dd>
-      <dt>여기서 김천사랑카드 결제 (${won(p)}원 × ${L}L ÷ 1.1)</dt><dd>${won(cardCost)}원</dd>
+      <dt>${r.gasNM?`여기서 결제 (${won(p)}원 × ${L}L)`:`여기서 김천사랑카드 결제 (${won(p)}원 × ${L}L ÷ 1.1)`}</dt><dd>${won(cardCost)}원</dd>
       <dt class="g">평균 대비</dt><dd class="g ${gain<0?'neg':''}">${gain>=0?won(gain)+"원 이득":won(-gain)+"원 손해"}</dd>
-      ${gain>0?`<dt>이득으로 여기서 더 넣을 수 있는 양 (${won(gain)}원 ÷ 실질 ${won2(p/1.1)}원)</dt><dd>${(gain/(p/1.1)).toFixed(1)}L</dd>
-      ${st.eff?`<dt>연비 ${st.eff}km/L 기준 더 갈 수 있는 거리</dt><dd>약 ${Math.round(gain/(p/1.1)*st.eff)}km</dd>`:""}`:""}</dl>`;}}
+      ${gain>0?`<dt>이득으로 여기서 더 넣을 수 있는 양 (${won(gain)}원 ÷ ${r.gasNM?"":"실질 "}${won2(ep)}원)</dt><dd>${(gain/ep).toFixed(1)}L</dd>
+      ${st.eff?`<dt>연비 ${st.eff}km/L 기준 더 갈 수 있는 거리</dt><dd>약 ${Math.round(gain/ep*st.eff)}km</dd>`:""}`:""}</dl>`;}}
     li.innerHTML = `
-      <div class="nm"><span class="t"></span>${minP!=null&&r.g&&r.g[st.fuel]===minP?'<span class="tag">최저가</span>':''}${r.ev?(r.ev.fast?`<span class="tag op">급속 ${r.ev.fast}기${r.ev.max?" · 최대 "+r.ev.max+"kW":""}</span>`:"")+(r.ev.slow?`<span class="tag tf">완속 ${r.ev.slow}기</span>`:"")+(r.ev.lim?'<span class="tag loc">이용 제한</span>':'')+(r.ev.pf?'<span class="tag tf">주차 무료</span>':''):''}${r.shelter?`<span class="tag tf">${esc(r.shelter.ud)}</span><span class="tag tf">면적 ${won(r.shelter.area)}㎡</span>`:''}${r.toilet?`<span class="tag op">${esc(r.toilet.open==="상시"?"상시 개방":r.toilet.open)}</span>`+r.toilet.feat.map(f=>`<span class="tag tf">${esc(f)}</span>`).join(""):''}${r.pharm?`<span class="tag ${r.ps&&r.ps.open?"op":"cl"}">${r.ps?esc(r.ps.text):""}</span>`:''}${r.pharm&&PUBNIGHT[r.n]?'<span class="tag pn">공공심야약국</span>':r.pharm&&pharmLate(r,dayIdx(new Date()))?'<span class="tag tf">야간 영업</span>':''}${r.pharm&&pharmHol(r)?`<span class="tag tf">${pharmSun(r)&&pharmHolOpen(r)?"일·공휴일 영업":pharmSun(r)?"일요일 영업":"공휴일 영업"}</span>`:''}${(r.office||r.hos||r.kio)&&r.ps?`<span class="tag ${r.ps.open?"op":"cl"}">${esc(r.ps.text)}</span>`:''}${r.hos&&r.hos.er?'<span class="tag er">응급실</span>':''}${r.kio&&r.kio.fam?'<span class="tag tf">가족관계증명 발급</span>':''}${r.rest?(r.rest.cap?`<span class="tag tf">이용 ${r.rest.cap}명</span>`:'')+r.rest.fl.map(f=>`<span class="tag op">${esc(f)}</span>`).join(''):''}${r.park2?(r.park2.kind.includes('무료')?'<span class="tag op">무료</span>':r.park2.kind.includes('유료')?'<span class="tag cl">유료</span>':'')+(r.park2.typ?`<span class="tag tf">${esc(r.park2.typ)}</span>`:'')+(r.park2.cap?`<span class="tag tf">${r.park2.cap}면</span>`:''):''}${r.repair&&r.repair.member?'<span class="tag">김천사랑카드 가맹</span>':''}${r.park?`<span class="tag tf">면적 ${won(r.park.ar)}㎡</span>`:''}${r.pharm&&r.pharm.member?'<span class="tag">김천사랑카드 가맹</span>':''}${r.her?`<span class="tag hk">${esc(r.her.kind)}</span>`:''}${r.her&&r.her.intangible?'<span class="tag loc">무형유산 · 장소 없음</span>':''}${r.good&&st.sec!=="good"?'<span class="tag gp">착한가격업소</span>':''}${r.good&&st.sec==="good"&&!r.nonMember?'<span class="tag">김천사랑카드 가맹점</span>':''}${r.nonMember?'<span class="tag loc">김천사랑카드 가맹점 아님</span>':''}${r.m===3?'<span class="tag loc">주소 위치</span>':''}${r.m===0&&!(r.her&&r.her.intangible)?'<span class="tag loc">위치 없음</span>':''}</div>
+      <div class="nm"><span class="t"></span>${minP!=null&&r.g&&effP(r,st.fuel)===minP?'<span class="tag">'+(st.memOnly?'최저가':'실질 최저')+'</span>':''}${r.gasNM?'<span class="tag loc">김천사랑카드 가맹 아님</span>'+(r.brand?`<span class="tag tf">${esc(r.brand)}</span>`:''):''}${r.ev?(r.ev.fast?`<span class="tag op">급속 ${r.ev.fast}기${r.ev.max?" · 최대 "+r.ev.max+"kW":""}</span>`:"")+(r.ev.slow?`<span class="tag tf">완속 ${r.ev.slow}기</span>`:"")+(r.ev.lim?'<span class="tag loc">이용 제한</span>':'')+(r.ev.pf?'<span class="tag tf">주차 무료</span>':''):''}${r.shelter?`<span class="tag tf">${esc(r.shelter.ud)}</span><span class="tag tf">면적 ${won(r.shelter.area)}㎡</span>`:''}${r.toilet?`<span class="tag op">${esc(r.toilet.open==="상시"?"상시 개방":r.toilet.open)}</span>`+r.toilet.feat.map(f=>`<span class="tag tf">${esc(f)}</span>`).join(""):''}${r.pharm?`<span class="tag ${r.ps&&r.ps.open?"op":"cl"}">${r.ps?esc(r.ps.text):""}</span>`:''}${r.pharm&&PUBNIGHT[r.n]?'<span class="tag pn">공공심야약국</span>':r.pharm&&pharmLate(r,dayIdx(new Date()))?'<span class="tag tf">야간 영업</span>':''}${r.pharm&&pharmHol(r)?`<span class="tag tf">${pharmSun(r)&&pharmHolOpen(r)?"일·공휴일 영업":pharmSun(r)?"일요일 영업":"공휴일 영업"}</span>`:''}${(r.office||r.hos||r.kio)&&r.ps?`<span class="tag ${r.ps.open?"op":"cl"}">${esc(r.ps.text)}</span>`:''}${r.hos&&r.hos.er?'<span class="tag er">응급실</span>':''}${r.kio&&r.kio.fam?'<span class="tag tf">가족관계증명 발급</span>':''}${r.rest?(r.rest.cap?`<span class="tag tf">이용 ${r.rest.cap}명</span>`:'')+r.rest.fl.map(f=>`<span class="tag op">${esc(f)}</span>`).join(''):''}${r.park2?(r.park2.kind.includes('무료')?'<span class="tag op">무료</span>':r.park2.kind.includes('유료')?'<span class="tag cl">유료</span>':'')+(r.park2.typ?`<span class="tag tf">${esc(r.park2.typ)}</span>`:'')+(r.park2.cap?`<span class="tag tf">${r.park2.cap}면</span>`:''):''}${r.repair&&r.repair.member?'<span class="tag">김천사랑카드 가맹</span>':''}${r.park?`<span class="tag tf">면적 ${won(r.park.ar)}㎡</span>`:''}${r.pharm&&r.pharm.member?'<span class="tag">김천사랑카드 가맹</span>':''}${r.her?`<span class="tag hk">${esc(r.her.kind)}</span>`:''}${r.her&&r.her.intangible?'<span class="tag loc">무형유산 · 장소 없음</span>':''}${r.good&&st.sec!=="good"?'<span class="tag gp">착한가격업소</span>':''}${r.good&&st.sec==="good"&&!r.nonMember?'<span class="tag">김천사랑카드 가맹점</span>':''}${r.nonMember?'<span class="tag loc">김천사랑카드 가맹점 아님</span>':''}${r.m===3?'<span class="tag loc">주소 위치</span>':''}${r.m===0&&!(r.her&&r.her.intangible)?'<span class="tag loc">위치 없음</span>':''}</div>
       <div class="km">${r.d!=null?fmtKm(r.d):""}</div>
       <div class="ad"><div class="cat"></div><div class="a"></div>${r.kn?'<div class="alias"></div>':''}</div>
       ${price}
@@ -889,9 +907,9 @@ function popupHtml(r){
   if(r.toilet) h+=`<div class="pc">${esc(r.toilet.open==="상시"?"상시 개방":r.toilet.open)}${r.toilet.feat.length?" · "+esc(r.toilet.feat.join(", ")):""} · 관리 ${esc(r.toilet.org)}</div>`;
   if(r.pharm){ const s=pharmState(r); h+=`<div><span class="tag ${s.open?"op":"cl"}">${esc(s.text)}</span>${s.today?` <span class="pc">오늘 ${s.today}</span>`:""}</div>`; }
   if(r.g){const f=st.menu==="fuel"?st.fuel:1, p=r.g[f];
-    if(p!=null){const lit=st.liters, gain=Math.round(D.avg[f]*lit-p*lit/1.1);
-      h+=`<div class="pr">${FUELN[f]} <b>${won(p)}원</b> · 실질 ${won(Math.round(p/1.1))}원<br>${lit}L 기준 김천 평균 대비 ${gain>=0?won(gain)+"원 이득":won(-gain)+"원 손해"}`;
-      if(gain>0){const gl=gain/(p/1.1); h+=` (${gl.toFixed(1)}L${st.eff?`, 약 ${Math.round(gl*st.eff)}km`:""})`;}
+    if(p!=null){const lit=st.liters, ep=effP(r,f), gain=Math.round(D.avg[f]*lit-ep*lit);
+      h+=`<div class="pr">${FUELN[f]} <b>${won(p)}원</b> · ${r.gasNM?"김천사랑카드 가맹 아님":"실질 "+won(Math.round(p/1.1))+"원"}<br>${lit}L 기준 김천 평균 대비 ${gain>=0?won(gain)+"원 이득":won(-gain)+"원 손해"}`;
+      if(gain>0){const gl=gain/ep; h+=` (${gl.toFixed(1)}L${st.eff?`, 약 ${Math.round(gl*st.eff)}km`:""})`;}
       h+=`</div>`;}}
   if(r.ph) h+=`<a class="call" href="${telHref(r.ph)}">전화 ${esc(r.ph)}</a>`;
   h+=`<div class="pl">${r.k?`<a href="https://place.map.kakao.com/${r.k}" target="_blank" rel="noopener">${r.office?"장소 정보":"가게 정보"}</a>`:""}<a href="https://map.kakao.com/link/to/${encodeURIComponent(r.kn||r.n)},${r.lat},${r.lng}" target="_blank" rel="noopener">카카오 길찾기</a></div></div>`;
@@ -900,9 +918,9 @@ function popupHtml(r){
 function drawMap(rows){
   lastRows=rows; if(!M) return;
   const fuel=st.menu==="fuel"&&!st.q, pts=rows.filter(r=>r.lat!=null);
-  const minP=fuel&&pts.length?Math.min(...pts.map(r=>r.g[st.fuel])):null;
+  const minP=fuel&&pts.length?Math.min(...pts.map(r=>effP(r,st.fuel))):null;
   M.setMarkers(pts.map(r=>({lat:r.lat,lng:r.lng,
-    html: fuel ? `<div class="pin-price${r.g[st.fuel]===minP?" best":""}" title="${esc(r.n)}">${won(r.g[st.fuel])}</div>` : `<div class="pin${r.ev?(r.ev.lim?" evp lim":" evp"):r.tour?" tr":r.repair?" rp":r.park2?(r.park2.kind.includes("무료")?" pkf":" pkp"):r.rest?(r.menu==="cold"?" cd":" ht"):r.shelter?" sh":r.office?" of":r.hos?(r.hos.er?" hs er":" hs"):r.kio?" ki":r.park?" pk":r.toilet?(r.m===3?" tl loc":" tl"):r.pharm?(pharmState(r).open?" po":" pcl"):r.her?" hr":(r.good?" gp":(r.m===3?" loc":""))}" title="${esc(r.n)}"></div>`,
+    html: fuel ? `<div class="pin-price${effP(r,st.fuel)===minP?" best":""}${r.gasNM?" nm":""}" title="${esc(r.n)}">${won(r.g[st.fuel])}</div>` : `<div class="pin${r.ev?(r.ev.lim?" evp lim":" evp"):r.tour?" tr":r.repair?" rp":r.park2?(r.park2.kind.includes("무료")?" pkf":" pkp"):r.rest?(r.menu==="cold"?" cd":" ht"):r.shelter?" sh":r.office?" of":r.hos?(r.hos.er?" hs er":" hs"):r.kio?" ki":r.park?" pk":r.toilet?(r.m===3?" tl loc":" tl"):r.pharm?(pharmState(r).open?" po":" pcl"):r.her?" hr":(r.good?" gp":(r.m===3?" loc":""))}" title="${esc(r.n)}"></div>`,
     onClick:()=>M.openCard(r.lat,r.lng,popupHtml(r))})));
   const key=st.menu+"|"+st.sub+"|"+st.q;
   if(key!==lastKey){ lastKey=key;
@@ -942,11 +960,22 @@ document.querySelectorAll("[data-v]").forEach(b=>b.addEventListener("click",()=>
 $("recenter").addEventListener("click",()=>{ setFollow(true); if(meLL&&M) M.pan(meLL[0],meLL[1],true); else startWatch(); });
 document.addEventListener("visibilitychange",()=>{ if(st.view!=="map") return; if(document.hidden) stopWatch(); else startWatch(); });
 if(load("kc-view")==="map") setView("map");
+// 비가맹 주유소: prices.json의 all → 목록에 추가(가맹점만 보기 해제 시 표시)
+const BRAND={SKE:"SK에너지",GSC:"GS칼텍스",HDO:"HD현대오일뱅크",SOL:"S-OIL",RTO:"알뜰",RTX:"알뜰(ex)",NHO:"NH-OIL",SKG:"SK가스",E1G:"E1",ETC:"자가상표"};
+const FUEL_CAT=(()=>{ const i=D.cats.findIndex(c=>/\/주유소$/.test(c)); return i>=0?i:(R.find(r=>r.menu==="fuel")||{}).c; })();
+function nearestEmd(lat,lng){ let b=-1,bd=1e9; Object.entries(D.cen).forEach(([e,c])=>{ const d=hav(lat,lng,c[0],c[1]); if(d<bd){bd=d;b=D.emds.indexOf(e);} }); return b; }
+function addNonMemberGas(all,asof){
+  for(let i=R.length-1;i>=0;i--) if(R[i].gasNM) R.splice(i,1);
+  Object.entries(all||{}).forEach(([id,[n,br,a,lat,lng,d,g,l,tel]])=>{
+    R.push({n,a,c:FUEL_CAT,e:nearestEmd(lat,lng),m:1,lat,lng,k:"",kn:"",ph:tel||"",menu:"fuel",g:[n,d,g,l,asof],gasNM:true,brand:BRAND[br]||"",s:(n+" "+a+" 주유소").toLowerCase()});
+  });
+}
 // 매일 자동 갱신되는 prices.json이 있으면 그 가격으로 바꾼다
 fetch("prices.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(p=>{
   if(!p||!p.gas||!p.avg) return;
   D.gas=p.gas; D.avg=p.avg; D.asof=p.asof;
-  R.forEach(r=>{ r.g = p.gas[r.n] || null; });
+  R.forEach(r=>{ if(!r.gasNM) r.g = p.gas[r.n] || null; });
+  if(p.all) addNonMemberGas(p.all,p.asof);
   $("asof").textContent = p.updated || `${p.asof.slice(0,4)}.${p.asof.slice(4,6)}.${p.asof.slice(6)}`;
   render();
 }).catch(()=>{});
