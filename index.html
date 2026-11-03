@@ -325,7 +325,7 @@ body.compact .ctlopen{display:inline-block;position:absolute;right:12px;top:6px;
     <input type="search" id="addr" placeholder="기준 주소 입력 (예: 혁신3로 15, 코아루, 김천역)" aria-label="기준 위치 주소">
     <button class="btn" id="addrgo" type="submit">기준으로</button>
   </form>
-  <div class="row" id="nbrow"><label class="toggle" for="nbshow"><input type="checkbox" id="nbshow" checked> 이웃 시군(구미·상주·칠곡·성주)도 보기</label></div>
+  <div class="row" id="nbrow"><label class="toggle" for="nbshow"><input type="checkbox" id="nbshow" checked> 이웃 시군(구미·상주·칠곡·성주·대구)도 보기</label></div>
   <div class="row" id="fuelrow" hidden>
     <div class="seg" role="group" aria-label="연료">
       <button id="fuel-d" data-f="1" aria-pressed="true">경유</button>
@@ -561,12 +561,16 @@ D.tour.forEach(([ct,n,a,lat,lng,img,tel,ov,hp,emd])=>{
   R.push({n,a,c:ci,e:emd,m:1,lat,lng,k:"",kn:"",ph:tel.replace(/<[^>]+>/g,""),menu,g:null,tour:{img,ov,hp},s:(n+" "+a+" "+label).toLowerCase()});
 });
 // ---------- 이웃 시군(구미·상주·칠곡·성주) 생활정보: nb/*.json을 필요할 때 불러옴 ----------
-const NB={"구미":{f:"nb/gumi.json",c:[36.1195,128.3445]},"상주":{f:"nb/sangju.json",c:[36.4109,128.159]},"칠곡":{f:"nb/chilgok.json",c:[35.9956,128.4017]},"성주":{f:"nb/seongju.json",c:[35.919,128.283]}};
+const NB={"구미":{f:"nb/gumi.json",c:[36.1195,128.3445]},"상주":{f:"nb/sangju.json",c:[36.4109,128.159]},"칠곡":{f:"nb/chilgok.json",c:[35.9956,128.4017]},"성주":{f:"nb/seongju.json",c:[35.919,128.283]},
+  // 대구 구·군: 자료가 커서 기준 위치가 가까울 때(r km 안)만 불러옴
+  "대구 중구":{f:"nb/dg-jung.json",c:[35.8693,128.6062],dg:1,r:12},"대구 동구":{f:"nb/dg-dong.json",c:[35.8866,128.6355],dg:1,r:14},"대구 서구":{f:"nb/dg-seo.json",c:[35.8718,128.5592],dg:1,r:12},
+  "대구 남구":{f:"nb/dg-nam.json",c:[35.846,128.5974],dg:1,r:12},"대구 북구":{f:"nb/dg-buk.json",c:[35.8858,128.5828],dg:1,r:14},"대구 수성구":{f:"nb/dg-suseong.json",c:[35.8582,128.6306],dg:1,r:13},
+  "대구 달서구":{f:"nb/dg-dalseo.json",c:[35.8298,128.5326],dg:1,r:13},"대구 달성군":{f:"nb/dg-dalseong.json",c:[35.7746,128.4314],dg:1,r:22},"대구 군위군":{f:"nb/dg-gunwi.json",c:[36.2428,128.5728],dg:1,r:22}};
 const rgOf=r=>r.rg||(r.kid&&r.kid.rg)||"";
 const isNb=r=>{const g=rgOf(r); return !!g&&g!=="김천";};
 const nbLoaded={};
 function loadNB(){ if(!st.nb||!st.base) return;
-  Object.entries(NB).forEach(([rg,o])=>{ if(nbLoaded[rg]) return; nbLoaded[rg]="loading";
+  Object.entries(NB).forEach(([rg,o])=>{ if(nbLoaded[rg]) return; if(o.dg&&hav(st.base.lat,st.base.lng,o.c[0],o.c[1])>o.r) return; nbLoaded[rg]="loading";
     fetch(o.f+"?v="+(D.lifeAsof||""),{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(S=>{ if(!S){ nbLoaded[rg]="none"; return; }
       buildLife(S,rg); nbLoaded[rg]="ok"; R.forEach(r=>{ if(r.rg===rg&&!r.rr){const m=r.a.replace(/\(.*?\)/g," ").match(roadRe); if(m){r.rr=m[1]; r.rn=+m[2];}} });
       Object.keys(menuCount).forEach(k=>delete menuCount[k]); R.forEach(r=>{ menuCount[r.menu]=(menuCount[r.menu]||0)+1; if(r.good&&!r.goodDup&&r.menu!=="good") menuCount.good=(menuCount.good||0)+1; });
@@ -629,7 +633,7 @@ function officeState(r,now=new Date()){
   if(di<5&&cur>=900&&cur<1800) return {open:true,text:"운영 중 · 18:00까지(평일 기준)"};
   return {open:false,text:di<5&&cur<900?"운영 전 · 평일 09:00 시작":"운영 시간 아님 · 평일 09~18시"};
 }
-{ const la=String(D.lifeAsof||""); const el=document.getElementById("lifeasof"); if(el&&la.length===8) el.textContent=`생활편의 자료(약국·병원·무인민원발급기·공원·대피시설·쉼터·전기차 충전소, 이웃 시군 구미·상주·칠곡·성주 포함)는 매일 공공 API로 자동 갱신됩니다. 마지막 갱신: ${la.slice(0,4)}.${+la.slice(4,6)}.${+la.slice(6)}`; }
+{ const la=String(D.lifeAsof||""); const el=document.getElementById("lifeasof"); if(el&&la.length===8) el.textContent=`생활편의 자료(약국·병원·무인민원발급기·공원·대피시설·쉼터·전기차 충전소, 이웃 시군 구미·상주·칠곡·성주와 대구 9개 구·군 포함)는 매일 공공 API로 자동 갱신됩니다. 마지막 갱신: ${la.slice(0,4)}.${+la.slice(4,6)}.${+la.slice(6)}`; }
 const SECS={
   near:{menu:"near",sub:()=>"약국 어데고? 화장실 어데고? 다 여 있다 🙌"},
   card:{sub:()=>`기름 어데가 싸노? 주유 할인 비교 · 착한가격업소 ${D.good.length}곳 · 김천사랑카드 가맹점 ${won(D.rows.length)}곳`},
@@ -724,12 +728,12 @@ const o0=document.createElement("option"); o0.value=""; o0.textContent="기준 �
 const oG=document.createElement("option"); oG.value="gps"; oG.textContent="내 위치"; oG.hidden=true; sel.appendChild(oG);
 const oP=document.createElement("option"); oP.value="pin"; oP.hidden=true; sel.appendChild(oP);
 Object.keys(D.cen).sort((a,b)=>a.localeCompare(b,"ko")).forEach(e=>{const o=document.createElement("option");o.value="e:"+e;o.textContent=e;sel.appendChild(o)});
-Object.keys(NB).forEach(g=>{const o=document.createElement("option");o.value="n:"+g;o.textContent=g+" 시내(이웃 시군)";sel.appendChild(o)});
+Object.keys(NB).forEach(g=>{const o=document.createElement("option");o.value="n:"+g;o.textContent=NB[g].dg?g+" (구청 부근)":g+" 시내(이웃 시군)";sel.appendChild(o)});
 function setBase(b,label){st.base=b; st.shown=60; loadNB(); render();}
 sel.addEventListener("change",()=>{
   const v=sel.value; $("status").className="status";
   if(v.startsWith("e:")){const c=D.cen[v.slice(2)]; st.base={lat:c[0],lng:c[1]}; store("kc-base",v); $("status").textContent=`${v.slice(2)} 중심 기준 직선거리입니다.`;}
-  else if(v.startsWith("n:")&&NB[v.slice(2)]){const c=NB[v.slice(2)].c; if(!st.nb){ st.nb=true; store("kc-nb","1"); $("nbshow").checked=true; } st.base={lat:c[0],lng:c[1]}; store("kc-base",v); $("status").textContent=`${v.slice(2)} 시내 기준 직선거리입니다.`; loadNB();}
+  else if(v.startsWith("n:")&&NB[v.slice(2)]){const c=NB[v.slice(2)].c; if(!st.nb){ st.nb=true; store("kc-nb","1"); $("nbshow").checked=true; } st.base={lat:c[0],lng:c[1]}; store("kc-base",v); $("status").textContent=`${v.slice(2)}${NB[v.slice(2)].dg?" 구청 부근":" 시내"} 기준 직선거리입니다.`; loadNB();}
   else if(!v){st.base=null; store("kc-base",""); $("status").textContent="기준 위치를 고르면 가까운 순으로 정렬됩니다.";}
   st.shown=60; render();
 });
@@ -814,7 +818,7 @@ function nearCats(now=new Date()){
 }
 function renderNear(){
   const box=$("near"); box.textContent="";
-  const emdGrid=()=>`<div class="emdgrid">${Object.keys(D.cen).sort((a,b)=>a.localeCompare(b,"ko")).map(e=>`<button type="button" class="emdbtn" data-e="e:${e}">${e}</button>`).join("")}</div><p class="nbhead">이웃 시군</p><div class="emdgrid nbgrid">${Object.keys(NB).map(g=>`<button type="button" class="emdbtn nbbtn2" data-e="n:${g}">${g}</button>`).join("")}</div>`;
+  const emdGrid=()=>`<div class="emdgrid">${Object.keys(D.cen).sort((a,b)=>a.localeCompare(b,"ko")).map(e=>`<button type="button" class="emdbtn" data-e="e:${e}">${e}</button>`).join("")}</div><p class="nbhead">이웃 시군</p><div class="emdgrid nbgrid">${Object.keys(NB).filter(g=>!NB[g].dg).map(g=>`<button type="button" class="emdbtn nbbtn2" data-e="n:${g}">${g}</button>`).join("")}</div><p class="nbhead">대구</p><div class="emdgrid nbgrid">${Object.keys(NB).filter(g=>NB[g].dg).map(g=>`<button type="button" class="emdbtn nbbtn2" data-e="n:${g}">${g.replace("대구 ","")}</button>`).join("")}</div>`;
   const bindEmd=()=>box.querySelectorAll(".emdbtn").forEach(b=>b.addEventListener("click",()=>{ sel.value=b.dataset.e; sel.dispatchEvent(new Event("change")); window.scrollTo({top:0}); }));
   if(!st.base){
     const failed=$("status").classList.contains("warn");
@@ -830,7 +834,7 @@ function renderNear(){
   const now=new Date();
   const bl=document.createElement("div"); bl.className="nbase";
   const isGps=sel.value==="gps";
-  bl.innerHTML=`📍 기준: <b>${isGps?"내 위치":esc((sel.value||"").replace(/^[en]:/,"")+(sel.value.startsWith("n:")?" 시내":" 중심"))}</b>${window.__gpsBusy?' '+mascot("look",34)+' <span class="tag cl">지금 위치 찾는 중… (지난번 위치로 먼저 보여드려여)</span>':""}${isGps?"":` <button type="button" id="nbgps" class="nbbtn">내 위치로 바꾸기</button>`} <button type="button" id="nbemd" class="nbbtn">동네 다시 고르기</button> <button type="button" id="nbtog" class="nbbtn${st.nb?" on":""}" aria-pressed="${st.nb}">${st.nb?"✓ ":""}이웃 시군도 보기</button>`;
+  bl.innerHTML=`📍 기준: <b>${isGps?"내 위치":esc((sel.value||"").replace(/^[en]:/,"")+(sel.value.startsWith("n:")?((NB[sel.value.slice(2)]||{}).dg?" 구청 부근":" 시내"):" 중심"))}</b>${window.__gpsBusy?' '+mascot("look",34)+' <span class="tag cl">지금 위치 찾는 중… (지난번 위치로 먼저 보여드려여)</span>':""}${isGps?"":` <button type="button" id="nbgps" class="nbbtn">내 위치로 바꾸기</button>`} <button type="button" id="nbemd" class="nbbtn">동네 다시 고르기</button> <button type="button" id="nbtog" class="nbbtn${st.nb?" on":""}" aria-pressed="${st.nb}">${st.nb?"✓ ":""}이웃 시군도 보기</button>`;
   box.appendChild(bl);
   if(!isGps) bl.querySelector("#nbgps").addEventListener("click",()=>$("gps").click());
   bl.querySelector("#nbtog").addEventListener("click",()=>{ $("nbshow").checked=!st.nb; $("nbshow").dispatchEvent(new Event("change")); });
@@ -994,7 +998,7 @@ function render(){
 const sm=load("kc-menu"); if(sm && (sm==="good"||D.menus.some(m=>m[0]===sm))){ st.cardMenu=sm; }
 { const lm=load("kc-lmenu"); if(LIFE_MENUS.some(m=>m[0]===lm)) st.lifeMenu=lm; const hm=load("kc-hmenu"); if(HER_MENUS.some(m=>m[0]===hm)) st.herMenu=hm; }
 const ss=load("kc-sec"); if(ss==="good"){ st.sec="card"; st.menu=st.cardMenu="good"; } else if(ss && SECS[ss]){ st.sec=ss; st.menu= ss==="card" ? st.cardMenu : ss==="life" ? (st.lifeMenu||"pharm") : ss==="her" ? (st.herMenu||"heritage") : SECS[ss].menu; }
-const sb=load("kc-base"); if(sb&&sb.startsWith("n:")&&NB[sb.slice(2)]){ sel.value=sb; const c=NB[sb.slice(2)].c; st.base={lat:c[0],lng:c[1]}; $("status").textContent=`${sb.slice(2)} 시내 기준 직선거리입니다.`; } else if(sb==="gps"){ setTimeout(()=>$("gps").click(),300); } else if(sb && sb.startsWith("e:") && D.cen[sb.slice(2)]){sel.value=sb; const c=D.cen[sb.slice(2)]; st.base={lat:c[0],lng:c[1]}; $("status").textContent=`${sb.slice(2)} 중심 기준 직선거리입니다.`;}
+const sb=load("kc-base"); if(sb&&sb.startsWith("n:")&&NB[sb.slice(2)]){ sel.value=sb; const c=NB[sb.slice(2)].c; st.base={lat:c[0],lng:c[1]}; $("status").textContent=`${sb.slice(2)}${NB[sb.slice(2)].dg?" 구청 부근":" 시내"} 기준 직선거리입니다.`; } else if(sb==="gps"){ setTimeout(()=>$("gps").click(),300); } else if(sb && sb.startsWith("e:") && D.cen[sb.slice(2)]){sel.value=sb; const c=D.cen[sb.slice(2)]; st.base={lat:c[0],lng:c[1]}; $("status").textContent=`${sb.slice(2)} 중심 기준 직선거리입니다.`;}
 else $("status").textContent="‘내 위치’를 누르거나 읍면동을 골라주세요.";
 sync(); render(); loadNB();
 
