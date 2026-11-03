@@ -3,8 +3,8 @@
 GitHub Actions에서 매일 실행된다. 공공 API에서 김천시 자료를 받아
 index.html 안에 들어 있는 데이터(const D = {...})의 해당 항목만 바꿔 쓴다.
 
-갱신 항목: 아이 아플 때(소아과·응급실 목록, 김천+인근+대구), 약국, 병원, 무인민원발급기, 도시공원, 민방위 대피시설, 전기차 충전소, 자동차 정비소, 공영주차장, 한파쉼터, 무더위쉼터
-(공중화장실·관공서·관광·문화재는 손으로 관리 — 이 스크립트가 건드리지 않음)
+갱신 항목: 이웃 시군(구미·상주·칠곡·성주) 생활정보 → nb/*.json, 아이 아플 때(소아과·응급실 목록, 김천+인근+대구), 약국, 병원, 무인민원발급기, 도시공원, 민방위 대피시설, 전기차 충전소, 자동차 정비소, 공영주차장, 한파쉼터, 무더위쉼터
+(김천 공중화장실은 보름에 한 번 갱신. 관공서·관광·문화재는 손으로 관리 — 이 스크립트가 건드리지 않음)
 
 안전장치: 어떤 항목이든 받기에 실패하거나 개수가 기존의 60% 미만이면 그 항목은 기존 자료를 그대로 둔다.
 
@@ -31,6 +31,9 @@ COLD_KEY = os.environ.get("SAFETY_COLD_KEY", "").strip()
 HEAT_KEY = os.environ.get("SAFETY_HEAT_KEY", "").strip()
 KAKAO = os.environ.get("KAKAO_REST_KEY", "").strip()
 GC = "5060000"  # 김천시 개방자치단체코드
+# 이웃 시군(생활정보만, nb/<slug>.json에 따로 저장): 이름, 개방자치단체코드, 행정구역코드, 파일 이름
+NEIGHBORS = [("구미시", "5080000", "47190", "gumi"), ("상주시", "5110000", "47250", "sangju"),
+             ("칠곡군", "5220000", "47850", "chilgok"), ("성주군", "5210000", "47840", "seongju")]
 HTML = "index.html"
 KST = timezone(timedelta(hours=9))
 
@@ -99,11 +102,21 @@ def items_xml(text):
 
 
 class Ctx:
-    def __init__(self, D):
-        self.D = D
-        self.pts = [(r[5], r[6], r[3]) for r in D["rows"] if r[5] and r[4] in (1, 2, 3) and r[3] >= 0]
+    def __init__(self, D, si="김천시", gc=GC, zs="47150"):
+        self.D, self.si, self.gc, self.zs = D, si, gc, zs
+        self.main = si == "김천시"
+        self.pts = [(r[5], r[6], r[3]) for r in D.get("rows", []) if r[5] and r[4] in (1, 2, 3) and r[3] >= 0]
+
+    def strip(self, a):
+        """주소 앞의 '경상북도 ○○시 ' 떼기"""
+        return re.sub(r"^(경상북도|경북)\s*" + re.escape(self.si) + r"\s*", "", (a or "").strip())
+
+    def mine(self, code, addr):
+        return str(code or "").startswith(self.zs) or self.si in (addr or "")
 
     def emd(self, lat, lng, addr=""):
+        if not self.main:  # 이웃 시군은 읍면동 구분 없이 지역 이름만 씀
+            return -1
         a = re.sub(r"^(경상북도|경북)\s*김천시\s*", "", addr or "")
         for i, e in enumerate(self.D["emds"]):
             if e[-1] in "읍면" and re.match(re.escape(e[:-1]) + r"\s*" + e[-1], a):
@@ -124,9 +137,9 @@ def hrs8(it, prefix="dutyTime"):
 
 def pharm(cx):
     url = (f"https://apis.data.go.kr/B552657/ErmctInsttInfoInqireService/getParmacyListInfoInqire"
-           f"?serviceKey={q(KEY)}&Q0={q('경상북도')}&Q1={q('김천시')}&pageNo=1&numOfRows=300")
+           f"?serviceKey={q(KEY)}&Q0={q('경상북도')}&Q1={q(cx.si)}&pageNo=1&numOfRows=500")
     its = items_xml(get(url, as_json=False))
-    rows = cx.D["rows"]
+    rows = cx.D.get("rows", [])
     out = []
     for it in its:
         n, a = it.get("dutyName", ""), it.get("dutyAddr", "")
@@ -141,9 +154,9 @@ def pharm(cx):
                 break
         out.append([n, a, tel(it.get("dutyTel1")), round(lat, 6), round(lng, 6), hrs8(it), mi, cx.emd(lat, lng, a)])
     names = {p[0] for p in out}
-    for n, a, tel, lat, lng, h in MANUAL_PHARM:
+    for n, a, ph, lat, lng, h in (MANUAL_PHARM if cx.main else []):
         if n not in names:
-            out.append([n, a, tel, lat, lng, h, -1, cx.emd(lat, lng, a)])
+            out.append([n, a, ph, lat, lng, h, -1, cx.emd(lat, lng, a)])
     return out
 
 
@@ -154,13 +167,13 @@ DIV = {"종합병원": "종합병원", "요양병원": "요양병원", "의원":
 def hosp(cx):
     old = {(h[0], h[1]): h for h in cx.D.get("hosp", [])}
     out = []
-    for page in range(1, 6):
+    for page in range(1, 11):
         url = (f"https://apis.data.go.kr/B552657/HsptlAsembySearchService/getHsptlMdcncListInfoInqire"
-               f"?serviceKey={q(KEY)}&Q0={q('경상북도')}&Q1={q('김천시')}&pageNo={page}&numOfRows=100")
+               f"?serviceKey={q(KEY)}&Q0={q('경상북도')}&Q1={q(cx.si)}&pageNo={page}&numOfRows=100")
         its = items_xml(get(url, as_json=False))
         for it in its:
             n = it.get("dutyName", "")
-            a = re.sub(r"^경상북도 김천시 ", "", it.get("dutyAddr", ""))
+            a = cx.strip(it.get("dutyAddr", ""))
             lat, lng = float(it.get("wgs84Lat") or 0), float(it.get("wgs84Lon") or 0)
             div = DIV.get(it.get("dutyDivNam", ""), it.get("dutyDivNam", ""))
             if div == "조산원" and "병원" in n:  # 원자료 분류 오류(정신병원이 조산원으로 등록)
@@ -242,7 +255,7 @@ def kiosk(cx):
     out = []
     for page in range(1, 6):
         url = (f"https://apis.data.go.kr/1741000/kiosk_info/installation_info?serviceKey={q(KEY)}&returnType=json"
-               f"&pageNo={page}&numOfRows=100&cond%5BOPN_ATMY_GRP_CD%3A%3AEQ%5D={GC}")
+               f"&pageNo={page}&numOfRows=100&cond%5BOPN_ATMY_GRP_CD%3A%3AEQ%5D={cx.gc}")
         its = get(url)["response"]["body"]["items"]["item"] or []
         for k in its:
             if k.get("USE_YN_NM") not in ("사용", None):
@@ -252,7 +265,8 @@ def kiosk(cx):
             h = f"{hs}-{he}" if hs else ""
             typ = "24시간" if w == "0000-2400" and h == "0000-2400" else ("평일·주말" if h else "평일만")
             n = k.get("ISSUMCHN_NM", "")
-            a = re.sub(r"\[.*?\]", "", k.get("INSTL_PLC_ADDR", "")).replace("경상북도 김천시 ", "").strip()
+            a = re.sub(r"\[.*?\]", "", k.get("INSTL_PLC_ADDR", "")).strip()
+            a = cx.strip(a)
             o = old.get((n, a))
             if o:
                 lat, lng = o[6], o[7]
@@ -271,14 +285,14 @@ def kiosk(cx):
 
 def park(cx):
     url = (f"https://api.data.go.kr/openapi/tn_pubr_public_cty_park_info_api?serviceKey={q(KEY)}"
-           f"&type=json&pageNo=1&numOfRows=500&insttCode={GC}")
+           f"&type=json&pageNo=1&numOfRows=500&insttCode={cx.gc}")
     its = get(url)["body"]["items"]["item"] or []
     out = []
     for p in its:
         lat, lng = float(p.get("latitude") or 0), float(p.get("longitude") or 0)
         if not lat:
             continue
-        a = (p.get("rdnmadr") or p.get("lnmadr") or "").replace("경상북도 김천시 ", "")
+        a = cx.strip(p.get("rdnmadr") or p.get("lnmadr") or "")
         out.append([p.get("parkNm", ""), p.get("parkSe", ""), a, round(lat, 6), round(lng, 6),
                     round(float(p.get("parkAr") or 0)), tel(p.get("phoneNumber")), cx.emd(lat, lng, a)])
     return out
@@ -286,7 +300,7 @@ def park(cx):
 
 def shelter(cx):
     url = (f"https://apis.data.go.kr/1741000/civil_defense_shelter_info/info?serviceKey={q(KEY)}&returnType=json"
-           f"&pageNo=1&numOfRows=1000&cond%5BOPN_ATMY_GRP_CD%3A%3AEQ%5D={GC}")
+           f"&pageNo=1&numOfRows=1000&cond%5BOPN_ATMY_GRP_CD%3A%3AEQ%5D={cx.gc}")
     its = get(url)["response"]["body"]["items"]["item"] or []
     out = []
     for i in its:
@@ -295,7 +309,7 @@ def shelter(cx):
         lat, lng = float(i.get("LAT_EPSG4326") or 0), float(i.get("LOT_EPST4326") or i.get("LOT_EPSG4326") or 0)
         if not lat:
             continue
-        a = (i.get("ROAD_NM_WHOL_ADDR") or i.get("LCTN_WHOL_ADDR") or "").replace("경상북도 김천시 ", "")
+        a = cx.strip(i.get("ROAD_NM_WHOL_ADDR") or i.get("LCTN_WHOL_ADDR") or "")
         out.append([i.get("FCLT_NM", ""), a, i.get("FCLTLOC_GRND_UDGD", ""), round(float(i.get("FCLT_AREA") or 0)),
                     round(lat, 6), round(lng, 6), cx.emd(lat, lng, a)])
     return out
@@ -308,7 +322,7 @@ def ev(cx):
     rows = []
     for page in range(1, 10):
         url = (f"https://apis.data.go.kr/B552584/EvCharger/getChargerInfo?serviceKey={q(KEY)}"
-               f"&pageNo={page}&numOfRows=1000&zcode=47&zscode=47150&dataType=JSON")
+               f"&pageNo={page}&numOfRows=1000&zcode=47&zscode={cx.zs}&dataType=JSON")
         its = get(url)["items"]["item"] or []
         rows += its
         if len(its) < 1000:
@@ -336,7 +350,7 @@ def ev(cx):
         det = c.get("addrDetail") or c.get("location") or ""
         out.append([c.get("statNm", ""), c.get("addr", ""), det, round(lat, 6), round(lng, 6), c.get("useTime", ""),
                     c.get("busiNm", ""), tel(c.get("busiCall")), c.get("parkingFree", ""), lim,
-                    s["fast"], s["slow"], s["max"], cx.emd(lat, lng, c.get("addr", ""))])
+                    s["fast"], s["slow"], s["max"], cx.emd(lat, lng, c.get("addr", "")), c.get("statId", "")])
     return out
 
 
@@ -364,6 +378,17 @@ def safety(api, key, idf, keep):
 
 
 TY = {"001": "공공시설", "003": "경로당"}
+_SAFE = {}
+
+
+def safety_all(api, key, idf, addrf, codef=None):
+    """김천·이웃 시군 몫을 한 번에 모아 두고 재사용(전국 자료라 시군마다 따로 훑으면 낭비)."""
+    if api not in _SAFE:
+        zs = ["47150"] + [z for _, _, z, _ in NEIGHBORS]
+        names = ["김천시"] + [s for s, _, _, _ in NEIGHBORS]
+        keep = lambda x: any(str(x.get(codef or idf, "")).startswith(z) for z in zs) or any(n in (x.get(addrf) or "") for n in names)
+        _SAFE[api] = safety(api, key, idf, keep)
+    return _SAFE[api]
 
 
 def fh(s, e):
@@ -371,19 +396,20 @@ def fh(s, e):
     return f"{s[:2]}:{s[2:]}~{e[:2]}:{e[2:]}" if s and e else ""
 
 
-def clean_addr(a):
-    a = re.sub(r"\s+", " ", re.sub(r"^경상북도 김천시 ?", "", a or "")).strip()
+def clean_addr(a, cx):
+    a = re.sub(r"\s+", " ", cx.strip(a)).strip()
     return re.sub(r"^(\S+[읍면])(?=\S)", r"\1 ", a)
 
 
 def cold(cx):
     out = []
-    keep = lambda x: str(x.get("REARE_FCLT_NO", "")).startswith("47150") or "김천시" in (x.get("RONA_DADDR") or "")
-    for x in safety("DSSP-IF-10804", COLD_KEY, "REARE_FCLT_NO", keep):
+    for x in safety_all("DSSP-IF-10804", COLD_KEY, "REARE_FCLT_NO", "RONA_DADDR"):
+        if not cx.mine(x.get("REARE_FCLT_NO"), x.get("RONA_DADDR")):
+            continue
         lat, lng = x.get("LAT"), x.get("LOT")
         if not lat:
             continue
-        a = clean_addr(x.get("RONA_DADDR") or x.get("DADDR"))
+        a = clean_addr(x.get("RONA_DADDR") or x.get("DADDR"), cx)
         h = [p + fh(x.get(b), x.get(e)) for p, b, e in (("평일 ", "WKDY_OPER_BGNG_HR", "WKDY_OPER_END_HR"),
                                                        ("토 ", "STDY_OPER_BGNG_HR", "STDY_OPER_END_HR"),
                                                        ("일 ", "SNDY_OPER_BGNG_HR", "SNDY_OPER_END_HR"),
@@ -395,12 +421,13 @@ def cold(cx):
 
 def heat(cx):
     out = []
-    keep = lambda x: str(x.get("ARCD", "")).startswith("47150") or "김천시" in (x.get("RN_DTL_ADRES") or "")
-    for x in safety("DSSP-IF-10942", HEAT_KEY, "RSTR_FCLTY_NO", keep):
+    for x in safety_all("DSSP-IF-10942", HEAT_KEY, "RSTR_FCLTY_NO", "RN_DTL_ADRES", "ARCD"):
+        if not cx.mine(x.get("ARCD"), x.get("RN_DTL_ADRES")):
+            continue
         lat, lng = x.get("LA"), x.get("LO")
         if not lat:
             continue
-        a = clean_addr(x.get("RN_DTL_ADRES") or x.get("DTL_ADRES"))
+        a = clean_addr(x.get("RN_DTL_ADRES") or x.get("DTL_ADRES"), cx)
         h = [p + fh(x.get(b), x.get(e)) for p, b, e in (("평일 ", "WKDAY_OPER_BEGIN_TIME", "WKDAY_OPER_END_TIME"),
                                                        ("주말·공휴일 ", "WKEND_HDAY_OPER_BEGIN_TIME", "WKEND_HDAY_OPER_END_TIME")) if x.get(b) and x.get(e)]
         fl = [lab for lab, f in (("주말 개방", "CHCK_MATTER_WKEND_HDAY_OPN_AT"), ("야간 개방", "CHCK_MATTER_NIGHT_OPN_AT")) if x.get(f) == "Y"]
@@ -414,9 +441,9 @@ RTY = {"1", "2", "3"}
 
 def repair(cx):
     url = (f"https://api.data.go.kr/openapi/tn_pubr_public_auto_maintenance_company_api?serviceKey={q(KEY)}"
-           f"&type=json&pageNo=1&numOfRows=1000&insttCode={GC}")
+           f"&type=json&pageNo=1&numOfRows=1000&insttCode={cx.gc}")
     its = get(url)["body"]["items"]["item"] or []
-    rows = cx.D["rows"]
+    rows = cx.D.get("rows", [])
     norm = lambda s: re.sub(r"[\s()㈜\-·]|주식회사|부분정비(공장)?|정비(공장)?|자동차|카센[타터]", "", s or "")
     out = []
     for x in its:
@@ -426,7 +453,7 @@ def repair(cx):
         if not lat:
             continue
         n = x.get("inspofcNm", "")
-        a = (x.get("rdnmadr") or x.get("lnmadr") or "").replace("경상북도 김천시 ", "")
+        a = cx.strip(x.get("rdnmadr") or x.get("lnmadr") or "")
         nn, best = norm(n), None
         for i, r in enumerate(rows):  # 김천사랑카드 가맹점과 이름·위치(250m)가 맞으면 연결
             if not r[5] or hav(lat, lng, r[5], r[6]) > 0.25:
@@ -440,14 +467,16 @@ def repair(cx):
                     d = hav(lat, lng, r[5], r[6])
                     if not best or d < best[0]:
                         best = (d, i)
-        out.append([n, a, x.get("inspofcType", ""), round(lat, 6), round(lng, 6), best[1] if best else -1, cx.emd(lat, lng, a)])
+        ty = str(x.get("inspofcType", "")).strip()
+        ty = str(int(ty)) if ty.isdigit() else ty
+        out.append([n, a, ty, round(lat, 6), round(lng, 6), best[1] if best else -1, cx.emd(lat, lng, a)])
     return out
 
 
 def parking(cx):
     """공영주차장(표준데이터)만 갱신하고, 카카오에서 모은 기타 주차장(요금 정보 없음)은 그대로 둔다."""
     url = (f"https://api.data.go.kr/openapi/tn_pubr_prkplce_info_api?serviceKey={q(KEY)}"
-           f"&type=json&pageNo=1&numOfRows=1000&insttCode={GC}")
+           f"&type=json&pageNo=1&numOfRows=1000&insttCode={cx.gc}")
     its = get(url)["body"]["items"]["item"] or []
     n_ = lambda v: int(float(v or 0))
     off = []
@@ -455,7 +484,7 @@ def parking(cx):
         lat, lng = float(x.get("latitude") or 0), float(x.get("longitude") or 0)
         if not lat:
             continue
-        a = (x.get("rdnmadr") or x.get("lnmadr") or "").replace("경상북도 김천시 ", "")
+        a = cx.strip(x.get("rdnmadr") or x.get("lnmadr") or "")
         chg = x.get("parkingchrgeInfo") or ""
         if chg == "무료":
             fee = "무료"
@@ -477,6 +506,108 @@ def parking(cx):
     return off + keep
 
 
+def toilet(cx):
+    """공중화장실(행정안전부 공중화장실정보 조회서비스). 김천은 보름에 한 번, 이웃 시군은 매일.
+    2025년 2월부터 원자료에서 위도·경도가 빠져서, 주소를 카카오로 좌표로 바꿈.
+    한 번 찾은(또는 손으로 고친) 좌표는 기존 자료에서 이름+주소, 없으면 이름이 같은 곳으로 찾아 그대로 씀."""
+    old = {(o[0], o[1]): o for o in cx.D.get("toilet", [])}
+    names = Counter(o[0] for o in cx.D.get("toilet", []))
+    by_name = {o[0]: o for o in cx.D.get("toilet", []) if names[o[0]] == 1}
+    out, miss = [], 0
+    for page in range(1, 31):
+        url = (f"https://apis.data.go.kr/1741000/public_restroom_info_v2/info_v2?serviceKey={q(KEY)}&returnType=json"
+               f"&pageNo={page}&numOfRows=100&cond%5BOPN_ATMY_GRP_CD%3A%3AEQ%5D={cx.gc}")
+        j = get(url)
+        if "response" not in j:
+            raise RuntimeError(str(j)[:200])
+        its = ((j["response"]["body"].get("items") or {}).get("item")) or []
+        for x in its:
+            n = (x.get("RSTRM_NM") or "").strip()
+            a = (x.get("LCTN_ROAD_NM_ADDR") or x.get("LCTN_LOTNO_ADDR") or "").strip()
+            if not n or not a:
+                continue
+            o = old.get((n, a)) or by_name.get(n)
+            m, emd = 1, None
+            if o:
+                lat, lng, m, emd = o[7], o[8], o[9], o[11]
+                if lat is None:  # 예전에 위치를 못 찾았던 곳은 한 번 더 찾아봄
+                    g = kakao_geo(a)
+                    if g:
+                        (lat, lng), m, emd = g, 1, None
+            else:
+                g = kakao_geo(a) or (kakao_geo(x["LCTN_LOTNO_ADDR"]) if x.get("LCTN_LOTNO_ADDR") and x.get("LCTN_LOTNO_ADDR") != a else None)
+                if not g:
+                    miss += 1
+                    continue
+                lat, lng = g
+            hr = (x.get("OPN_HR") or "").strip()
+            dtl = (x.get("OPN_HR_DTL") or "").strip()
+            op = "상시" if hr in ("상시", "24시간") else (dtl or hr or "개방시간 정보 없음")
+            feat = []
+            if any(int(x.get(k) or 0) > 0 for k in ("MALE_FRDBL_TOILT_CNT", "MALE_FRDBL_URNL_CNT", "FEMALE_FRDBL_TOILT_CNT")):
+                feat.append("장애인용")
+            if x.get("EMRGNCBLL_INSTL_YN") == "Y":
+                feat.append("비상벨")
+            if x.get("DIAP_EXCHCON_EN") == "Y":
+                feat.append("기저귀교환대")
+            if x.get("RSTRM_ENTRAN_CCTV_INSTL_EN") == "Y":
+                feat.append("CCTV")
+            out.append([n, a, x.get("SE_NM") or "공중화장실", op, dtl if hr in ("상시", "24시간") else "",
+                        x.get("MNG_INST_NM", ""), tel(x.get("TELNO")), lat, lng, m, ",".join(feat), emd if emd is not None else cx.emd(lat, lng, a)])
+        if len(its) < 100:
+            break
+    if miss:
+        print(f"  화장실 주소로 위치 못 찾음(건너뜀): {miss}곳")
+    return out
+
+
+def run_jobs(D, cx, jobs, label="", ok=None):
+    """항목별로 받아서 D를 고침. 실패하거나 너무 줄면 기존 자료 유지. 바뀐 항목 목록을 돌려줌(ok에는 성공한 항목 이름)."""
+    changed = []
+    for name, fn in jobs:
+        before = D.get(name, [])
+        try:
+            new = fn(cx)
+        except Exception as e:
+            print(f"[{label}{name}] 실패 → 기존 자료 유지: {e}")
+            continue
+        if len(new) < 0.6 * len(before):
+            print(f"[{label}{name}] {len(before)} → {len(new)}곳: 너무 많이 줄어 기존 자료 유지")
+            continue
+        if ok is not None:
+            ok.add(name)
+        new.sort(key=lambda r: r[0])
+        if new != sorted(before, key=lambda r: r[0]):
+            D[name] = new
+            changed.append(f"{label}{name} {len(before)}→{len(new)}")
+        print(f"[{label}{name}] {len(new)}곳")
+    return changed
+
+
+def neighbors():
+    """구미·상주·칠곡·성주 생활정보 → nb/<slug>.json (앱이 필요할 때만 불러옴)"""
+    os.makedirs("nb", exist_ok=True)
+    jobs = [("pharm", pharm), ("hosp", hosp), ("kiosk", kiosk), ("park", park), ("shelter", shelter), ("ev", ev),
+            ("repair", repair), ("parking", parking), ("toilet", toilet)]
+    if COLD_KEY:
+        jobs.append(("cold", cold))
+    if HEAT_KEY:
+        jobs.append(("heat", heat))
+    for si, gc, zs, slug in NEIGHBORS:
+        path = f"nb/{slug}.json"
+        try:
+            old = json.load(open(path, encoding="utf-8"))
+        except (FileNotFoundError, ValueError):
+            old = {}
+        D = dict(old)
+        ch = run_jobs(D, Ctx(D, si, gc, zs), jobs, si[:2] + " ")
+        if ch or not old:
+            D["rg"], D["asof"] = si[:2], datetime.now(KST).strftime("%Y%m%d")
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(D, f, ensure_ascii=False, separators=(",", ":"))
+            print(f"{path} 저장:", ", ".join(ch) or "처음 만듦")
+
+
 def main():
     if not KEY:
         sys.exit("DATA_GO_KR_KEY 비밀값이 없습니다.")
@@ -491,23 +622,17 @@ def main():
         jobs.append(("cold", cold))
     if HEAT_KEY:
         jobs.append(("heat", heat))
-    changed = []
-    for name, fn in jobs:
-        before = D.get(name, [])
-        try:
-            new = fn(cx)
-        except Exception as e:
-            print(f"[{name}] 실패 → 기존 자료 유지: {e}")
-            continue
-        if len(new) < 0.6 * len(before):
-            print(f"[{name}] {len(before)} → {len(new)}곳: 너무 많이 줄어 기존 자료 유지")
-            continue
-        new.sort(key=lambda r: r[0])
-        old_sorted = sorted(before, key=lambda r: r[0])
-        if new != old_sorted:
-            D[name] = new
-            changed.append(f"{name} {len(before)}→{len(new)}")
-        print(f"[{name}] {len(new)}곳")
+    # 김천 공중화장실: 1년에 몇 곳 느는 정도라 보름에 한 번만
+    today = datetime.now(KST)
+    ta = D.get("toiletAsof", "")
+    if not ta or (today - datetime.strptime(ta, "%Y%m%d").replace(tzinfo=KST)).days >= 15:
+        jobs.append(("toilet", toilet))
+    ok = set()
+    changed = run_jobs(D, cx, jobs, ok=ok)
+    if "toilet" in ok and D.get("toiletAsof") != today.strftime("%Y%m%d"):
+        D["toiletAsof"] = today.strftime("%Y%m%d")
+        changed.append("toiletAsof")
+    neighbors()
     if not changed:
         print("바뀐 자료 없음")
         return
