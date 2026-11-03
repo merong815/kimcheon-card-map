@@ -34,6 +34,10 @@ GC = "5060000"  # 김천시 개방자치단체코드
 # 이웃 시군(생활정보만, nb/<slug>.json에 따로 저장): 이름, 개방자치단체코드, 행정구역코드, 파일 이름
 NEIGHBORS = [("구미시", "5080000", "47190", "gumi"), ("상주시", "5110000", "47250", "sangju"),
              ("칠곡군", "5220000", "47850", "chilgok"), ("성주군", "5210000", "47840", "seongju")]
+# 대구광역시 구·군(nb/dg-*.json, 앱은 대구 근처일 때만 불러옴): 구·군, 개방자치단체코드, 행정구역코드, 파일 이름
+DAEGU = [("중구", "3410000", "27110", "dg-jung"), ("동구", "3420000", "27140", "dg-dong"), ("서구", "3430000", "27170", "dg-seo"),
+         ("남구", "3440000", "27200", "dg-nam"), ("북구", "3450000", "27230", "dg-buk"), ("수성구", "3460000", "27260", "dg-suseong"),
+         ("달서구", "3470000", "27290", "dg-dalseo"), ("달성군", "3480000", "27710", "dg-dalseong"), ("군위군", "5141000", "27720", "dg-gunwi")]
 HTML = "index.html"
 KST = timezone(timedelta(hours=9))
 
@@ -102,17 +106,25 @@ def items_xml(text):
 
 
 class Ctx:
-    def __init__(self, D, si="김천시", gc=GC, zs="47150"):
-        self.D, self.si, self.gc, self.zs = D, si, gc, zs
+    def __init__(self, D, si="김천시", gc=GC, zs="47150", sido="경상북도"):
+        self.D, self.si, self.gc, self.zs, self.sido = D, si, gc, zs, sido
         self.main = si == "김천시"
         self.pts = [(r[5], r[6], r[3]) for r in D.get("rows", []) if r[5] and r[4] in (1, 2, 3) and r[3] >= 0]
 
     def strip(self, a):
         """주소 앞의 '경상북도 ○○시 ' 떼기"""
-        return re.sub(r"^(경상북도|경북)\s*" + re.escape(self.si) + r"\s*", "", (a or "").strip())
+        pre = r"^(경상북도|경북)\s*" if self.sido == "경상북도" else r"^(대구광역시|대구)\s*"
+        return re.sub(pre + re.escape(self.si) + r"\s*", "", (a or "").strip())
 
     def mine(self, code, addr):
-        return str(code or "").startswith(self.zs) or self.si in (addr or "")
+        a = addr or ""
+        if str(code or "").startswith(self.zs):
+            return True
+        if self.sido == "경상북도":
+            return self.si in a
+        if self.si == "군위군" and "군위군" in a:  # 2023년 대구 편입 전 주소(경상북도 군위군)로 남은 자료
+            return True
+        return re.match(r"^(대구광역시|대구)\s*" + re.escape(self.si) + r"\b", a) is not None
 
     def emd(self, lat, lng, addr=""):
         if not self.main:  # 이웃 시군은 읍면동 구분 없이 지역 이름만 씀
@@ -137,7 +149,7 @@ def hrs8(it, prefix="dutyTime"):
 
 def pharm(cx):
     url = (f"https://apis.data.go.kr/B552657/ErmctInsttInfoInqireService/getParmacyListInfoInqire"
-           f"?serviceKey={q(KEY)}&Q0={q('경상북도')}&Q1={q(cx.si)}&pageNo=1&numOfRows=500")
+           f"?serviceKey={q(KEY)}&Q0={q(cx.sido)}&Q1={q(cx.si)}&pageNo=1&numOfRows=500")
     its = items_xml(get(url, as_json=False))
     rows = cx.D.get("rows", [])
     out = []
@@ -167,9 +179,9 @@ DIV = {"종합병원": "종합병원", "요양병원": "요양병원", "의원":
 def hosp(cx):
     old = {(h[0], h[1]): h for h in cx.D.get("hosp", [])}
     out = []
-    for page in range(1, 11):
+    for page in range(1, 21):
         url = (f"https://apis.data.go.kr/B552657/HsptlAsembySearchService/getHsptlMdcncListInfoInqire"
-               f"?serviceKey={q(KEY)}&Q0={q('경상북도')}&Q1={q(cx.si)}&pageNo={page}&numOfRows=100")
+               f"?serviceKey={q(KEY)}&Q0={q(cx.sido)}&Q1={q(cx.si)}&pageNo={page}&numOfRows=100")
         its = items_xml(get(url, as_json=False))
         for it in its:
             n = it.get("dutyName", "")
@@ -320,9 +332,9 @@ SLOW = {"02", "08"}  # AC완속, DC콤보(완속)
 
 def ev(cx):
     rows = []
-    for page in range(1, 10):
+    for page in range(1, 16):
         url = (f"https://apis.data.go.kr/B552584/EvCharger/getChargerInfo?serviceKey={q(KEY)}"
-               f"&pageNo={page}&numOfRows=1000&zcode=47&zscode={cx.zs}&dataType=JSON")
+               f"&pageNo={page}&numOfRows=1000&zcode={cx.zs[:2]}&zscode={cx.zs}&dataType=JSON")
         its = get(url)["items"]["item"] or []
         rows += its
         if len(its) < 1000:
@@ -384,8 +396,8 @@ _SAFE = {}
 def safety_all(api, key, idf, addrf, codef=None):
     """김천·이웃 시군 몫을 한 번에 모아 두고 재사용(전국 자료라 시군마다 따로 훑으면 낭비)."""
     if api not in _SAFE:
-        zs = ["47150"] + [z for _, _, z, _ in NEIGHBORS]
-        names = ["김천시"] + [s for s, _, _, _ in NEIGHBORS]
+        zs = ["47150"] + [z for _, _, z, _ in NEIGHBORS + DAEGU]
+        names = ["김천시"] + [s for s, _, _, _ in NEIGHBORS] + ["대구광역시 " + s for s, _, _, _ in DAEGU] + ["대구 " + s for s, _, _, _ in DAEGU] + ["군위군"]
         keep = lambda x: any(str(x.get(codef or idf, "")).startswith(z) for z in zs) or any(n in (x.get(addrf) or "") for n in names)
         _SAFE[api] = safety(api, key, idf, keep)
     return _SAFE[api]
@@ -585,7 +597,7 @@ def run_jobs(D, cx, jobs, label="", ok=None):
 
 
 def neighbors():
-    """구미·상주·칠곡·성주 생활정보 → nb/<slug>.json (앱이 필요할 때만 불러옴)"""
+    """구미·상주·칠곡·성주 + 대구 9개 구·군 생활정보 → nb/<slug>.json (앱이 필요할 때만 불러옴)"""
     os.makedirs("nb", exist_ok=True)
     jobs = [("pharm", pharm), ("hosp", hosp), ("kiosk", kiosk), ("park", park), ("shelter", shelter), ("ev", ev),
             ("repair", repair), ("parking", parking), ("toilet", toilet)]
@@ -593,16 +605,18 @@ def neighbors():
         jobs.append(("cold", cold))
     if HEAT_KEY:
         jobs.append(("heat", heat))
-    for si, gc, zs, slug in NEIGHBORS:
+    areas = [("경상북도", si, gc, zs, slug, si[:2]) for si, gc, zs, slug in NEIGHBORS] + \
+            [("대구광역시", si, gc, zs, slug, "대구 " + si) for si, gc, zs, slug in DAEGU]
+    for sido, si, gc, zs, slug, label in areas:
         path = f"nb/{slug}.json"
         try:
             old = json.load(open(path, encoding="utf-8"))
         except (FileNotFoundError, ValueError):
             old = {}
         D = dict(old)
-        ch = run_jobs(D, Ctx(D, si, gc, zs), jobs, si[:2] + " ")
+        ch = run_jobs(D, Ctx(D, si, gc, zs, sido), jobs, label + " ")
         if ch or not old:
-            D["rg"], D["asof"] = si[:2], datetime.now(KST).strftime("%Y%m%d")
+            D["rg"], D["asof"] = label, datetime.now(KST).strftime("%Y%m%d")
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(D, f, ensure_ascii=False, separators=(",", ":"))
             print(f"{path} 저장:", ", ".join(ch) or "처음 만듦")
