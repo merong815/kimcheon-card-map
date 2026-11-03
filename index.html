@@ -144,7 +144,9 @@ li.it{background:var(--surface);border:1px solid var(--line);border-radius:10px;
 .ncard{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--surface)}
 .ncard .nh{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
 .ncard h2{font-size:16px;margin:0}
-.nmore{font:inherit;font-size:13px;border:0;background:none;color:var(--accent);cursor:pointer;padding:4px 0}
+.nmore{font-family:"Jua",var(--f-body,system-ui),sans-serif;font-weight:400;font-size:15px;border:0;background:var(--accent);color:var(--accent-ink);cursor:pointer;padding:7px 14px;border-radius:99px;white-space:nowrap;flex-shrink:0;box-shadow:0 2px 0 rgba(0,0,0,.18);letter-spacing:-.2px}
+.nmore:active{transform:translateY(1px);box-shadow:0 1px 0 rgba(0,0,0,.18)}
+.ncard.kidcard .nmore{background:#d6336c;color:#fff}
 .nitem{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
 .nitem:first-of-type{border-top:0}
 .nl{min-width:0}.nl .tag{display:inline-block;white-space:nowrap;margin-top:2px}.na{font-size:12.5px;opacity:.7;margin-top:2px}
@@ -157,14 +159,14 @@ li.it{background:var(--surface);border:1px solid var(--line);border-radius:10px;
 .pin.rp{background:#495057;width:13px;height:13px;border-radius:3px}
 .sos{border:1px solid #f0c36d;background:#fff8e6;border-radius:12px;padding:10px 12px;margin:0 0 10px;font-size:13.5px;line-height:1.55}
 .sos b{font-family:"Jua",sans-serif;font-weight:400;font-size:16px}
-.sos.kidsos{border-color:#f3a6b8;background:#fff1f4}
+.sos.kidsos{border-color:#f3a6b8;background:#fff1f4;background:color-mix(in srgb,#d6336c 9%,var(--surface));color:inherit}
 .sos.kidsos a[href^="tel"]{color:#d6336c;font-weight:700;white-space:nowrap}
 .tag.rg{background:#eef2ff;color:#3b4fa8;border-color:#c9d2f5}
 .tag.moon{background:#2f3a68;color:#ffe9a8;border-color:#2f3a68}
 .tag.kid{background:#ffe3ec;color:#b02a5b;border-color:#f3a6b8;font-weight:700}
 .alias.moonnote{color:#2f3a68}
 .oldn{color:var(--muted,#666);font-size:12px;margin-left:3px}
-.ncard.kidcard{border-color:#f3a6b8;background:linear-gradient(#fff6f8,#fff)}
+.ncard.kidcard{border-color:#f3a6b8;background:var(--surface);background:linear-gradient(color-mix(in srgb,#d6336c 9%,var(--surface)),var(--surface))}
 .nnote.kidnote a{color:#d6336c;font-weight:700}
 .pin.kd{background:#ff7aa2}
 .pin.of{background:#5b5bd6;width:14px;height:14px;border-radius:3px}
