@@ -16,7 +16,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
 
@@ -34,13 +34,13 @@ jobs:
 
       - name: 바뀐 자료 저장
         run: |
-          if git diff --quiet -- index.html; then
+          git add index.html nb
+          if git diff --cached --quiet; then
             echo "바뀐 자료 없음"
             exit 0
           fi
           git config user.name "life-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
           git commit -m "생활정보 갱신 $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')"
           git pull --rebase
           git push

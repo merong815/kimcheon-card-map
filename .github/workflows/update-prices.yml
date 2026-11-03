@@ -2,10 +2,10 @@ name: 주유 가격 갱신
 
 on:
   schedule:
-    # 매일 한국시간 07:17, 12:17, 18:17 (UTC로 적어야 함: 22:17, 03:17, 09:17)
+    # 매일 한국시간 07:17, 17:17 (UTC로 적어야 함: 22:17, 08:17)
+    # 오피넷 무료 키는 하루 300건 → 한 번에 140건씩 2번. 손으로 Run workflow를 더 누르면 한도를 넘을 수 있음
     - cron: "17 22 * * *"
-    - cron: "17 3 * * *"
-    - cron: "17 9 * * *"
+    - cron: "17 8 * * *"
   workflow_dispatch: {}   # Actions 화면에서 'Run workflow'로 수동 실행
 
 permissions:
@@ -31,6 +31,7 @@ jobs:
       - name: 오피넷 가격 받기
         env:
           OPINET_KEY: ${{ secrets.OPINET_KEY }}
+          KAKAO_REST_KEY: ${{ secrets.KAKAO_REST_KEY }}
         run: python scripts/update_prices.py
 
       - name: 바뀐 가격 저장

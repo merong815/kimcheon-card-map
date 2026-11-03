@@ -1,4 +1,4 @@
-name: 응급실 실시간 병상 갱신
+name: 응급실 병상·충전기 상태 갱신
 
 on:
   schedule:
@@ -30,7 +30,7 @@ jobs:
         run: |
           git config user.name "er-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add er.json
+          git add er.json ev.json 2>/dev/null || git add er.json
           if git diff --cached --quiet; then echo "변경 없음"; exit 0; fi
           git commit -m "응급실 병상 $(TZ=Asia/Seoul date '+%H:%M')"
           for i in 1 2 3; do git pull --rebase && git push && exit 0; sleep 5; done

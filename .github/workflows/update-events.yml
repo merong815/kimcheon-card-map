@@ -1,0 +1,38 @@
+name: 주간행사계획 갱신
+
+on:
+  schedule:
+    # 매일 한국시간 19:07, 08:37 (금요일에 올라오는 다음 주 계획과 '_수정'본을 놓치지 않게)
+    - cron: "7 10 * * *"
+    - cron: "37 23 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-events
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 한글 파일 읽기 라이브러리 설치
+        run: pip install olefile
+      - name: 김천시 누리집에서 주간행사계획 받기
+        run: python scripts/update_events.py
+      - name: 저장
+        run: |
+          git add events.json
+          if git diff --cached --quiet; then echo "변경 없음"; exit 0; fi
+          git config user.name "events-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "주간행사계획 갱신 $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')"
+          for i in 1 2 3; do git pull --rebase && git push && exit 0; sleep 5; done
+          exit 1
