@@ -301,7 +301,7 @@ body.compact .ctlopen{display:inline-block;position:absolute;right:12px;top:6px;
     <label class="toggle memtoggle" for="memonly"><input type="checkbox" id="memonly" checked> 김천사랑카드 가맹점만</label>
     <div class="seg" role="group" aria-label="정렬">
       <button id="sort-near" data-s="near" aria-pressed="true">가까운 순</button>
-      <button id="sort-cheap" data-s="cheap" aria-pressed="false">싼 순</button>
+      <button id="sort-cheap" data-s="cheap" aria-pressed="false">저렴한 순</button>
     </div>
     <label for="liters" class="status">1회 주유량</label><input type="number" id="liters" min="1" max="200" value="50"><span class="status">L</span>
     <label for="eff" class="status">내 차 연비</label><input type="number" id="eff" min="1" max="50" step="0.1" placeholder="예: 14"><span class="status">km/L</span>
@@ -719,9 +719,9 @@ function renderNear(){
   if(!st.base){
     const failed=$("status").classList.contains("warn");
     box.innerHTML=`<div class="nearintro">${mascot("wave",150)}<p class="nbig">여가 김천 어데GO?</p><p class="nbig2">약국 어데고? 화장실 어데고?</p>
-      ${failed?`<p class="nwarn">위치를 못 받았어여 😅<br>휴대폰 위치(GPS)가 꺼져 있거나, 허용을 안 누르셨을 수도 있어여.<br>아래에서 <b>우리 동네</b>를 눌러도 되여.</p>`:""}
+      ${failed?`<p class="nwarn">위치를 못 받았어여 😅<br>휴대폰 위치(GPS)가 꺼져 있거나, 허용을 안 누르셨을 수도 있어여.<br>아래에서 <b>우리 동네</b>를 눌러도 돼여.</p>`:""}
       <button class="btn big gobtn" id="neargps" type="button">📍 내 위치 찾기</button>
-      <p class="hint">누르고 나서 휴대폰이 물어보면 <b>‘앱 사용 중에만 허용’</b>을 눌러여.<br><small>처음 한 번만 하면 다음부터 안 물어봐도 되여.</small></p>
+      <p class="hint">누르고 나서 휴대폰이 물어보면 <b>‘앱 사용 중에만 허용’</b>을 눌러여.<br><small>처음 한 번만 하면 다음부터 안 물어봐도 돼여.</small></p>
       <div class="divider"><span>또는</span></div>
       <p class="or"><b>우리 동네</b>를 눌러여</p>${emdGrid()}</div>`;
     $("neargps").addEventListener("click",()=>$("gps").click()); bindEmd(); return;
