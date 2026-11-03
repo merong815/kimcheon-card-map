@@ -1,0 +1,37 @@
+name: 응급실 실시간 병상 갱신
+
+on:
+  schedule:
+    # 30분마다 (GitHub 사정으로 몇 분씩 늦어질 수 있음)
+    - cron: "7,37 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-er
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 응급실 병상 받기
+        env:
+          DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
+        run: python scripts/update_er.py
+      - name: 저장
+        run: |
+          git config user.name "er-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add er.json
+          if git diff --cached --quiet; then echo "변경 없음"; exit 0; fi
+          git commit -m "응급실 병상 $(TZ=Asia/Seoul date '+%H:%M')"
+          for i in 1 2 3; do git pull --rebase && git push && exit 0; sleep 5; done
+          exit 1
