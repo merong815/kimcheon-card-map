@@ -828,7 +828,24 @@ def neighbors():
             print(f"{path} 저장:", ", ".join(ch) or "처음 만듦")
 
 
+def apply_patch(path):
+    """저장 직전에 저장소의 최신 index.html을 받아 생활정보 항목만 덮어씀(그 사이 사람이 올린 화면 수정이 지워지지 않게)."""
+    patch = json.load(open(path, encoding="utf-8"))
+    t = open(HTML, encoding="utf-8").read()
+    m = re.search(r"const D = (\{.*?\});\nconst FUELN", t, re.S)
+    if not m:
+        sys.exit("index.html에서 데이터(const D)를 찾지 못했습니다.")
+    D = json.loads(m.group(1))
+    D.update(patch)
+    t = t[:m.start(1)] + json.dumps(D, ensure_ascii=False, separators=(",", ":")) + t[m.end(1):]
+    open(HTML, "w", encoding="utf-8").write(t)
+    print("최신 index.html에 반영:", ", ".join(patch))
+
+
 def main():
+    if len(sys.argv) == 3 and sys.argv[1] == "--apply":
+        apply_patch(sys.argv[2])
+        return
     if not KEY:
         sys.exit("DATA_GO_KR_KEY 비밀값이 없습니다.")
     t = open(HTML, encoding="utf-8").read()
@@ -866,6 +883,10 @@ def main():
         print("바뀐 자료 없음")
         return
     D["lifeAsof"] = datetime.now(KST).strftime("%Y%m%d")
+    keys = {c.split(" ")[0] for c in changed} | {"lifeAsof"}
+    if "toiletAsof" in D:
+        keys.add("toiletAsof")
+    json.dump({k: D[k] for k in keys if k in D}, open("life_patch.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
     t = t[:m.start(1)] + json.dumps(D, ensure_ascii=False, separators=(",", ":")) + t[m.end(1):]
     open(HTML, "w", encoding="utf-8").write(t)
     print("갱신:", ", ".join(changed))
