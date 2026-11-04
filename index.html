@@ -185,6 +185,7 @@ main{padding-bottom:64px}
 .nbsel{display:flex;flex-wrap:wrap;gap:5px;align-items:center}.nblab{font-size:13px;color:var(--muted);margin-right:2px}
 .nbsel .nbchip{padding:4px 9px;font-size:13px}.nbsel .nbchip[aria-pressed="false"]{opacity:.65}
 .nearsel{margin-top:6px;width:100%}
+.alias.cardwarn{color:#c92a2a;font-weight:700}
 .skipbtn{display:block;margin:12px auto 0;font-size:15px;padding:10px 16px;border-radius:99px}
 .brandhome{display:flex;align-items:center;gap:4px;color:inherit;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .brandhome:active{opacity:.7}
@@ -466,6 +467,9 @@ $("asof").textContent = `${D.asof.slice(0,4)}.${D.asof.slice(4,6)}.${D.asof.slic
 // rows: [name, addr, catIdx, emdIdx, matchType, lat, lng, kakaoId, kakaoName, phone]
 const R = D.rows.map(x=>({n:x[0],a:x[1],c:x[2],e:x[3],m:x[4],lat:x[5],lng:x[6],k:x[7],kn:x[8],ph:x[9],menu:D.catMenu[x[2]],g:D.gas[x[0]]||null,s:(x[0]+" "+x[1]+" "+(x[8]||"")).toLowerCase()}));
 
+// 가맹점 목록에는 있지만 실제로 김천사랑카드가 안 되는 곳(현장 확인·제보 기준)
+const CARD_EXCEPT={"행복한충전소":"LPG는 김천사랑카드 결제가 안 된대여 (현장 확인 2026.11.4) · 같은 곳 주유(행복한주유충전소)는 돼여"};
+R.forEach(r=>{ if(CARD_EXCEPT[r.n]&&r.menu==="fuel"){ r.gasNM=true; r.cardWarn=CARD_EXCEPT[r.n]; } });
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 // 착한가격업소(김천시 지정) 표시: 가맹점과 일치하면 배지, 가맹점 목록에 없는 곳은 '착한가격' 메뉴에만 추가
 D.good.forEach(([n,typ,a,tel,lat,lng,kid,kn,idxs,emd])=>{
@@ -704,10 +708,10 @@ const SECS={
 D.menus=D.menus.filter(m=>m[0]!=="good"&&m[0]!=="heritage");
 const LIFE_KEYS=["pharm","toilet","ev","shelter","office","hos","kio","park","rest","repair","park2","kid","aed","vet","wifi","sport"];
 const inSection=r=> (st.sec==="good"||(st.sec==="card"&&st.menu==="good")) ? (!!r.good&&!r.goodDup) : st.sec==="her" ? !!(r.her||r.tour) : st.sec==="life" ? LIFE_KEYS.some(k=>r[k]) : (!r.her&&!r.nonMember&&!r.tour&&!LIFE_KEYS.some(k=>r[k]));
-// 이웃 지역은 구미·상주·칠곡·성주·대구를 하나씩 켜고 끔(아이 아플 때는 늘 넓게)
+// 이웃 지역은 구미·상주·칠곡·성주·대구를 하나씩 켜고 끔
 const NB_GROUPS=["구미","상주","칠곡","성주","대구"];
 const nbGroup=g=>String(g||"").startsWith("대구")?"대구":String(g||"");
-const nbOk=r=> !isNb(r) || !!r.kid || !!(st.nbSel&&st.nbSel.has(nbGroup(rgOf(r))));
+const nbOk=r=> !isNb(r) || !!(st.nbSel&&st.nbSel.has(nbGroup(rgOf(r))));   // 아이 아플 때도 고른 지역만
 const inMenu=(r,m)=> m==="good" ? (!!r.good && !r.goodDup) : r.menu===m;
 // 지도 카드용 짧은 설명: 140자 안에서 문장 끝(다.)까지 자르고, 더 있으면 안내
 const excerpt=s=>{ if(s.length<=140) return s; const m=s.slice(0,140).match(/^.*[다음]\./s); return (m?m[0]:s.slice(0,130)+"…")+" (전체 설명은 목록 보기에서)"; };
@@ -1016,7 +1020,7 @@ function render(){
   if(!st.base) sum += ` · <span>기준 위치를 고르면 가까운 순으로 정렬됩니다.</span>`;
   if(fuel && !st.q && !st.memOnly && !R.some(r=>r.gasNM)) sum += ` · <span>비가맹 주유소 가격은 다음 자동 갱신(하루 2번) 뒤부터 보여여.</span>`;
   if(st.menu==="kid"&&!st.q){ loadER(); const up=ERB&&ERB.stale?"자료가 오래돼 병상 숫자는 숨겼어여":ERB&&ERB.updated?ERB.updated.slice(11,16)+" 받아옴":"";
-    sum=`<div class="sos kidsos"><b>🚨 아이가 숨쉬기 힘들어하거나, 축 처져 잘 안 깨거나, 경련이 멈추지 않으면 기다리지 말고 <a href="tel:119">☎ 119</a></b><br>어디로 가야 할지 모르겠으면 119에 전화해도 병원 안내·응급처치 상담을 받을 수 있어여.<br>📞 <b style="font-size:14px">출발 전에 꼭 전화</b>해서 지금 소아 진료되는지 물어보세여. 응급실도 소아 전문의가 없을 때가 있어여.<br><small>병상 숫자 = 남은 병상/전체 · 국립중앙의료원 실시간 자료${up?" ("+up+")":""} · 김천에서 가까운 순으로 구미·칠곡·상주·성주·영동·대구까지 보여여</small></div>`+sum; }
+    sum=`<div class="sos kidsos"><b>🚨 아이가 숨쉬기 힘들어하거나, 축 처져 잘 안 깨거나, 경련이 멈추지 않으면 기다리지 말고 <a href="tel:119">☎ 119</a></b><br>어디로 가야 할지 모르겠으면 119에 전화해도 병원 안내·응급처치 상담을 받을 수 있어여.<br>📞 <b style="font-size:14px">출발 전에 꼭 전화</b>해서 지금 소아 진료되는지 물어보세여. 응급실도 소아 전문의가 없을 때가 있어여.<br><small>병상 숫자 = 남은 병상/전체 · 국립중앙의료원 실시간 자료${up?" ("+up+")":""} · 김천과 위에서 고른 이웃 지역(구미·상주·칠곡·성주·대구)을 가까운 순으로 보여여</small></div>`+sum; }
   if(st.menu==="ev"&&!st.q) sum=`<span>${EVS&&EVS.s?`🔌 충전기 상태: ${esc(EVS.updated.slice(11,16))} 기준(30분마다, 김천만 · 이웃 시군은 상태 정보 없음)`:EVS&&EVS.stale?"🔌 충전기 상태 자료가 오래돼 숨겼어여":"🔌 충전기 상태 불러오는 중…"}</span> · `+sum;
   if(st.menu==="repair"&&!st.q) sum=`<div class="sos"><b>차 섰나? 놀라지 말고 이 순서로!</b><br>① 안전한 곳으로 피하고 비상등·삼각대<br>② <b style="font-size:14px">가입한 자동차보험 긴급출동</b>(24시간, 보험증권·보험사 앱에 번호 있음)<br>③ 고속도로라면 한국도로공사 긴급견인 <a href="tel:15882504">☎ 1588-2504</a> — 승용차·1.4톤 이하, 가까운 휴게소·영업소까지 무료(연 2회)<br>④ 그다음 가까운 정비소 ↓ (밤·주말엔 대부분 문 닫아요)</div>`+sum;
   $("summary").innerHTML = sum;
@@ -1053,6 +1057,7 @@ function render(){
     if(r.toilet){ const d=document.createElement("div"); d.className="alias"; d.textContent="관리: "+r.toilet.org+(r.toilet.detail?" · "+r.toilet.detail:""); li.querySelector(".ad").append(d); }
     if(r.park2){ const d=document.createElement("div"); d.className="alias"; d.textContent=(r.park2.fee?"요금: "+r.park2.fee:"요금 정보 없음(현장 확인)")+(r.park2.note?" · 감면: "+r.park2.note:"")+(r.park2.kind.startsWith("공영·")?" · 24시간":""); li.querySelector(".ad").append(d); }
     if(r.rest){ const d=document.createElement("div"); d.className="alias"; d.textContent=(r.rest.hrs||"운영시간 정보 없음(현장 확인)")+(r.rest.rm?" · "+r.rest.rm:""); li.querySelector(".ad").append(d); }
+    if(r.cardWarn){ const d=document.createElement("div"); d.className="alias cardwarn"; d.textContent="⚠️ "+r.cardWarn; li.querySelector(".ad").append(d); }
     if(r.wifi&&r.wifi.det&&r.wifi.det!==r.a){ const d=document.createElement("div"); d.className="alias"; d.textContent="설치 위치: "+r.wifi.det; li.querySelector(".ad").append(d); }
     if(r.aed){ const d=document.createElement("div"); d.className="alias"; d.textContent="건물이 열려 있을 때만 쓸 수 있어여 · 쓰러진 사람을 보면 먼저 ☎119 (상황실이 쓰는 법을 알려줘여)"; li.querySelector(".ad").append(d); }
     if(r.kid&&r.kid.old){ const d=document.createElement("div"); d.className="alias"; d.textContent="옛 이름: "+r.kid.old; li.querySelector(".ad").append(d); }
@@ -1259,7 +1264,7 @@ const BRAND={SKE:"SK에너지",GSC:"GS칼텍스",HDO:"HD현대오일뱅크",SOL:
 const FUEL_CAT=(()=>{ const i=D.cats.findIndex(c=>/\/주유소$/.test(c)); return i>=0?i:(R.find(r=>r.menu==="fuel")||{}).c; })();
 function nearestEmd(lat,lng){ let b=-1,bd=1e9; Object.entries(D.cen).forEach(([e,c])=>{ const d=hav(lat,lng,c[0],c[1]); if(d<bd){bd=d;b=D.emds.indexOf(e);} }); return b; }
 function addNonMemberGas(all,asof){
-  RV++; for(let i=R.length-1;i>=0;i--) if(R[i].gasNM) R.splice(i,1);
+  RV++; for(let i=R.length-1;i>=0;i--) if(R[i].gasNM&&!R[i].cardWarn) R.splice(i,1);
   Object.entries(all||{}).forEach(([id,[n,br,a,lat,lng,d,g,l,tel,rg,pd]])=>{
     const nb=rg&&rg!=="김천";
     R.push({n,a,c:FUEL_CAT,e:nb?-1:nearestEmd(lat,lng),m:1,lat,lng,k:"",kn:"",ph:tel||"",menu:"fuel",g:[n,d,g,l,pd||asof],gasNM:true,rg:nb?rg:"",brand:BRAND[br]||"",s:(n+" "+a+" 주유소 "+(rg||"")).toLowerCase()});
@@ -1269,7 +1274,7 @@ function addNonMemberGas(all,asof){
 fetch("prices.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(p=>{
   if(!p||!p.gas||!p.avg) return;
   D.gas=p.gas; D.avg=p.avg; D.asof=p.asof; D.avgs=p.avgs||{};
-  R.forEach(r=>{ if(!r.gasNM) r.g = p.gas[r.n] || null; });
+  R.forEach(r=>{ if(!r.gasNM||r.cardWarn) r.g = p.gas[r.n] || null; });
   if(p.all) addNonMemberGas(p.all,p.asof);
   $("asof").textContent = p.updated || `${p.asof.slice(0,4)}.${p.asof.slice(4,6)}.${p.asof.slice(6)}`;
   render();
