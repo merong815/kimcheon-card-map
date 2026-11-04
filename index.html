@@ -166,6 +166,11 @@ li.it{background:var(--surface);border:1px solid var(--line);border-radius:10px;
 .tag.kid{background:#ffe3ec;color:#b02a5b;border-color:#f3a6b8;font-weight:700}
 .alias.moonnote{color:#2f3a68}
 main{padding-bottom:64px}
+.nearintro .hint{max-width:460px;margin-left:auto;margin-right:auto;text-align:center}
+.srcs{margin-top:6px}.srcs summary{cursor:pointer;color:var(--accent);font-weight:700;padding:6px 0}
+.nbmore{max-width:560px;margin:14px auto 0}.nbmore summary{cursor:pointer;font-family:"Jua",sans-serif;font-size:17px;padding:10px;border:1px dashed var(--line);border-radius:12px;list-style:none}
+.btn.nearall{display:block;width:100%;margin:12px 0 4px;padding:12px;font-size:15px;border-radius:12px}
+.skipbtn{display:block;margin:12px auto 0;font-size:15px;padding:10px 16px;border-radius:99px}
 .bigbtn{margin-left:auto;font-family:"Jua",sans-serif;font-size:17px;line-height:1;border:1px solid rgba(255,255,255,.35);background:transparent;color:inherit;border-radius:10px;padding:6px 10px;cursor:pointer}
 .brand{display:flex;align-items:center;gap:4px}
 body.big header .wrap,body.big .ctl .wrap,body.big #near,body.big #summary,body.big #list,body.big #more,body.big #fb,body.big .viewbar{zoom:1.2}
@@ -254,7 +259,9 @@ li.it.good{border-color:var(--good);background:linear-gradient(90deg,var(--good-
 .charge span{font-weight:500;font-size:12px;opacity:.8}
 .charge:focus-visible{outline:2px solid var(--board-ink);outline-offset:2px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.secs{display:flex;gap:2px 13px;flex-wrap:wrap;align-items:flex-end}
+.secs{display:flex;gap:2px 13px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;align-items:flex-end}.secs::-webkit-scrollbar{display:none}
+.sec{flex:none}
+@media (max-width:400px){.secs{gap:2px 10px}.secs .sec{font-size:15.5px}}
 .sec{font-family:var(--f-display);font-size:17px;line-height:1.3;background:none;border:0;padding:2px 0 5px;color:color-mix(in srgb,var(--board-ink) 55%,transparent);border-bottom:3px solid transparent;cursor:pointer}
 .sec[aria-selected="true"]{color:var(--board-ink);border-bottom-color:var(--digit)}
 .sec:focus-visible{outline:2px solid var(--digit);outline-offset:2px}
@@ -307,6 +314,7 @@ body.compact .ctlopen{display:inline-block;position:absolute;right:12px;top:6px;
     <button class="sec" id="sec-life" data-sec="life" role="tab" aria-selected="false">생활정보</button>
     <button class="sec" id="sec-her" data-sec="her" role="tab" aria-selected="false">문화·관광</button>
     <button class="sec" id="sec-card" data-sec="card" role="tab" aria-selected="false">알뜰혜택</button>
+    <button class="sec" id="sec-events" data-sec="events" role="tab" aria-selected="false">행사</button>
   </div>
   <p class="sub" id="secsub"></p>
   <a class="charge" id="charge" href="https://play.google.com/store/apps/details?id=com.konai.konadure" target="_blank" rel="noopener">김천사랑카드 충전하기 <span>그리고 앱 열기 →</span></a>
@@ -369,6 +377,8 @@ body.compact .ctlopen{display:inline-block;position:absolute;right:12px;top:6px;
   <button class="more" id="more" type="button" hidden>더 보기</button>
   <div class="note">
     <p><b>어데GO 김천</b>은 공공데이터를 모아 개인이 만든 비공식 앱입니다. 김천시의 공식 서비스가 아니며, 정보는 실제와 다를 수 있으니 중요한 일은 해당 기관에 확인하세요.</p>
+    <p class="fbfoot"><button type="button" class="fbopen" data-fb="private">📮 불편한 점·틀린 정보 알려주기</button> <button type="button" class="fbopen" data-fb="board">📋 의견 게시판</button></p>
+    <details class="srcs"><summary>자료 출처·자세한 안내 보기</summary>
     <p>가맹점: 김천시청 홈페이지 김천사랑카드 가맹점 현황(2026.10.31 수집). 이후 가입·탈락은 반영되지 않았습니다.</p>
     <p>위치·가게 정보: 카카오 로컬 API로 이름과 주소를 맞춰 찾았습니다. ‘주소 위치’ 표시는 카카오맵에서 가게를 찾지 못해 주소 좌표로 표시한 곳입니다.</p>
     <p>주유 가격·김천시 평균: 한국석유공사 오피넷, <span id="asof"></span> 기준(하루 2번 자동 갱신). 실질가는 충전 10% 적립 반영(가격 ÷ 1.1). ‘평균 대비’는 김천시 평균 가격으로 같은 양을 현금·일반카드로 넣었을 때와 비교한 금액입니다.</p>
@@ -383,9 +393,10 @@ body.compact .ctlopen{display:inline-block;position:absolute;right:12px;top:6px;
     <p>비가맹 주유소: 오피넷에 등록된 김천시와 이웃 시군(구미·상주·칠곡·성주) 주유소 중 김천사랑카드 가맹점이 아닌 곳(하루 2번 자동 갱신, 오피넷 무료 호출 한도 때문에 이웃 시군 일부는 직전 가격일 수 있음 — 가격 옆 날짜 확인). ‘김천사랑카드 가맹점만’ 체크를 끄면 함께 보입니다. 비가맹점은 카드 10% 적립이 없어 실제 결제가 그대로 비용입니다.</p>
     <p>공중화장실: 공공데이터포털 전국공중화장실표준데이터(김천시 등록분, 데이터 기준일 2025.6.30). 개방화장실은 민간·공공 건물의 화장실을 개방한 곳입니다.</p>
     <p id="lifeasof"></p>
-    <p class="fbfoot"><button type="button" class="fbopen" data-fb="private">📮 불편한 점·틀린 정보 알려주기</button> <button type="button" class="fbopen" data-fb="board">📋 의견 게시판</button></p>
+    
     <p>약국: 국립중앙의료원 전국 약국 정보(2026.11.1 수집). 운영시간은 약국 사정에 따라 다를 수 있으니 방문 전 전화로 확인하세요. 공휴일은 2027년 2월까지 반영했습니다. 공공심야약국(재창·새서울·이연)은 김천시 안내 기준이며, 새서울약국은 약국 공개 자료에 없어 김천시 안내 정보만 표시합니다.</p>
     <p>거리는 직선거리입니다. 주소로 정한 기준 위치는 가맹점 주소를 이용한 추정이라 실제 위치와 수십~수백 m 다를 수 있습니다.</p>
+  </details>
   </div>
 </div></main>
 
@@ -581,7 +592,7 @@ function nbRefresh(){ clearTimeout(nbRefresh.t); nbRefresh.t=setTimeout(()=>{ $(
 const LIFE_MENUS=[["kid","아이 아플 때"],["hosp","병원"],["dent","치과"],["pharm","약국"],["cold","한파쉼터"],["heat","무더위쉼터"],["shelter","민방위 대피시설"],["office","관공서"],["kiosk","무인민원발급기"],["toilet","공중화장실"],["park","공원"],["parking","주차장"],["repair","자동차 정비소"],["ev","전기차 충전소"]];
 const LIFE_GROUPS=[["med","의료",["kid","hosp","dent","pharm"]],["safe","안전",["cold","heat","shelter"]],["daily","생활",["office","kiosk","toilet","park","parking","repair","ev"]]];
 const HRS_MENUS=["kid","pharm","hosp","dent","office","kiosk"];
-const HER_MENUS=[["events","📅 이번 주 행사"],["heritage","문화재"],["tour12","관광지"],["tour14","문화시설"],["tour28","레포츠·캠핑"]];
+const HER_MENUS=[["heritage","문화재"],["tour12","관광지"],["tour14","문화시설"],["tour28","레포츠·캠핑"]];
 const ymdKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const dayIdx=d=> HOLIDAYS.includes(ymdKey(d)) ? 7 : (d.getDay()+6)%7;   // 0=월 … 6=일, 7=공휴일
 const fmtH=s=>s?`${s.slice(0,2)}:${s.slice(2)}`:"";
@@ -642,6 +653,7 @@ const SECS={
   card:{sub:()=>`기름 어데가 싸노? 주유 할인 비교 · 착한가격업소 ${D.good.length}곳 · 김천사랑카드 가맹점 ${won(D.rows.length)}곳`},
   good:{menu:"good",sub:()=>`김천시 지정 착한가격업소 ${D.good.length}곳 · 김천사랑카드 가맹 ${D.good.filter(g=>g[8].length).length}곳`},
   life:{menu:"pharm",sub:()=>`병원·치과·약국·쉼터·화장실… 김천 생활정보 다 여 있다 · 지금 문 연 약국 ${R.filter(r=>r.pharm&&pharmState(r).open).length}곳`},
+  events:{menu:"events",sub:()=>EVT?`이번 주 김천 행사 ${EVT.items.filter(evtPublic).length}건 · 김천시 누리집 ‘주간행사계획’`:"이번 주 김천 행사 · 김천시 누리집 ‘주간행사계획’"},
   her:{menu:"heritage",sub:()=>`문화재 ${D.her.length}건(국가유산청) · 관광지·문화시설·레포츠 ${D.tour.length}곳(한국관광공사)`}
 };
 D.menus=D.menus.filter(m=>m[0]!=="good"&&m[0]!=="heritage");
@@ -717,7 +729,7 @@ function sync(){
   $("charge").hidden = st.sec!=="card"; $("nbrow").hidden = !(st.sec==="life"||(st.sec==="card"&&st.menu==="fuel"));
   document.title = "어데GO 김천"; const bm=document.querySelector(".brand .bm"); if(bm&&!bm.firstChild) bm.innerHTML=MASCOT; document.body.classList.toggle("life",st.sec==="life");
   const nearMode=st.sec==="near"; ["subs","q"].forEach(id=>{ if(nearMode) $(id).hidden=true; }); $("q").hidden=nearMode;
-  document.querySelectorAll(".viewbar,#summary,#mapwrap,#list,#more").forEach(e=>e.style.display=nearMode?"none":""); if(st.sec==="her"&&st.menu==="events"){ document.querySelectorAll(".viewbar,#mapwrap").forEach(e=>e.style.display="none"); } $("near").hidden=!nearMode; document.querySelector(".ctl").style.display=nearMode?"none":"";
+  document.querySelectorAll(".viewbar,#summary,#mapwrap,#list,#more").forEach(e=>e.style.display=nearMode?"none":""); if(st.sec==="events"){ document.querySelectorAll(".viewbar,#mapwrap").forEach(e=>e.style.display="none"); } $("near").hidden=!nearMode; document.querySelector(".ctl").style.display=(nearMode||st.sec==="events")?"none":"";
   document.querySelectorAll("#menus .chip, #menus2 .chip").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.g ? b.dataset.g===lifeGroupOf(st.menu) : b.dataset.m===st.menu)));
   $("fuelrow").hidden = st.menu!=="fuel" || st.sec!=="card";
   $("liferow").hidden = st.sec!=="life" || !(HRS_MENUS.includes(st.menu)||st.menu==="ev"||st.menu==="toilet"); $("toiletwrap").hidden = st.menu!=="toilet";
@@ -821,23 +833,28 @@ function nearCats(now=new Date()){
 }
 function renderNear(){
   const box=$("near"); box.textContent="";
-  const emdGrid=()=>`<div class="emdgrid">${Object.keys(D.cen).sort((a,b)=>a.localeCompare(b,"ko")).map(e=>`<button type="button" class="emdbtn" data-e="e:${e}">${e}</button>`).join("")}</div><p class="nbhead">이웃 시군</p><div class="emdgrid nbgrid">${Object.keys(NB).filter(g=>!NB[g].dg).map(g=>`<button type="button" class="emdbtn nbbtn2" data-e="n:${g}">${g}</button>`).join("")}</div><p class="nbhead">대구</p><div class="emdgrid nbgrid">${Object.keys(NB).filter(g=>NB[g].dg).map(g=>`<button type="button" class="emdbtn nbbtn2" data-e="n:${g}">${g.replace("대구 ","")}</button>`).join("")}</div>`;
+  const emdGrid=()=>`<div class="emdgrid">${Object.keys(D.cen).sort((a,b)=>a.localeCompare(b,"ko")).map(e=>`<button type="button" class="emdbtn" data-e="e:${e}">${e}</button>`).join("")}</div><details class="nbmore"><summary>이웃 시군·대구에서 보기 ▾</summary><p class="nbhead">이웃 시군</p><div class="emdgrid nbgrid">${Object.keys(NB).filter(g=>!NB[g].dg).map(g=>`<button type="button" class="emdbtn nbbtn2" data-e="n:${g}">${g}</button>`).join("")}</div><p class="nbhead">대구</p><div class="emdgrid nbgrid">${Object.keys(NB).filter(g=>NB[g].dg).map(g=>`<button type="button" class="emdbtn nbbtn2" data-e="n:${g}">${g.replace("대구 ","")}</button>`).join("")}</div></details>`;
   const bindEmd=()=>box.querySelectorAll(".emdbtn").forEach(b=>b.addEventListener("click",()=>{ sel.value=b.dataset.e; sel.dispatchEvent(new Event("change")); window.scrollTo({top:0}); }));
   if(!st.base){
     const failed=$("status").classList.contains("warn");
     box.innerHTML=`<div class="nearintro">${mascot("wave",150)}<p class="nbig">여가 김천 어데GO?</p><p class="nbig2">약국 어데고? 화장실 어데고?</p>
       ${failed?`<p class="nwarn">위치를 못 받았어여 😅<br>휴대폰 위치(GPS)가 꺼져 있거나, 허용을 안 누르셨을 수도 있어여.<br>아래에서 <b>우리 동네</b>를 눌러도 돼여.</p>`:""}
       <button class="btn big gobtn" id="neargps" type="button">📍 내 위치 찾기</button>
-      <p class="hint">누르고 나서 휴대폰이 물어보면 <b>‘앱 사용 중에만 허용’</b>을 눌러여.<br><small>처음 한 번만 하면 다음부터 안 물어봐도 돼여.</small></p>
+      ${/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+        ? `<p class="hint">누르고 나서 휴대폰이 물어보면 <b>‘앱 사용 중에만 허용’</b>을 눌러여.<br><small>처음 한 번만 하면 다음부터 안 물어봐도 돼여.</small></p>`
+        : `<p class="hint">누르면 화면 <b>왼쪽 위(주소창 옆)</b>에 위치 허용 창이 떠여. <b>‘허용’</b>을 눌러여.<br><small>컴퓨터는 위치가 조금 부정확할 수 있어여. 아래에서 동네를 고르는 게 더 정확해여.</small></p>`}
+      <button class="btn skipbtn" id="nearskip" type="button">그냥 둘러볼게여 · 김천시청 기준으로 보기 →</button>
       <div class="divider"><span>또는</span></div>
       <p class="or"><b>우리 동네</b>를 눌러여</p>${emdGrid()}</div>`;
-    $("neargps").addEventListener("click",()=>$("gps").click()); bindEmd(); return;
+    $("neargps").addEventListener("click",()=>$("gps").click());
+    $("nearskip").addEventListener("click",()=>{ oP.hidden=false; oP.textContent="김천시청 기준"; sel.value="pin"; $("status").className="status"; $("status").textContent="김천시청 기준 직선거리입니다."; setBase({lat:36.13979,lng:128.11368}); window.scrollTo({top:0}); });
+    bindEmd(); return;
   }
 
   const now=new Date();
   const bl=document.createElement("div"); bl.className="nbase";
   const isGps=sel.value==="gps";
-  bl.innerHTML=`📍 기준: <b>${isGps?"내 위치":esc((sel.value||"").replace(/^[en]:/,"")+(sel.value.startsWith("n:")?((NB[sel.value.slice(2)]||{}).dg?" 구청 부근":" 시내"):" 중심"))}</b>${window.__gpsBusy?' '+mascot("look",34)+' <span class="tag cl">지금 위치 찾는 중… (지난번 위치로 먼저 보여드려여)</span>':""}${isGps?"":` <button type="button" id="nbgps" class="nbbtn">내 위치로 바꾸기</button>`} <button type="button" id="nbemd" class="nbbtn">동네 다시 고르기</button> <button type="button" id="nbtog" class="nbbtn${st.nb?" on":""}" aria-pressed="${st.nb}">${st.nb?"✓ ":""}이웃 시군도 보기</button>`;
+  bl.innerHTML=`📍 기준: <b>${isGps?"내 위치":sel.value==="pin"?esc(oP.textContent):esc((sel.value||"").replace(/^[en]:/,"")+(sel.value.startsWith("n:")?((NB[sel.value.slice(2)]||{}).dg?" 구청 부근":" 시내"):" 중심"))}</b>${window.__gpsBusy?' '+mascot("look",34)+' <span class="tag cl">지금 위치 찾는 중… (지난번 위치로 먼저 보여드려여)</span>':""}${isGps?"":` <button type="button" id="nbgps" class="nbbtn">내 위치로 바꾸기</button>`} <button type="button" id="nbemd" class="nbbtn">동네 다시 고르기</button> <button type="button" id="nbtog" class="nbbtn${st.nb?" on":""}" aria-pressed="${st.nb}">${st.nb?"✓ ":""}이웃 시군도 보기</button>`;
   box.appendChild(bl);
   if(!isGps) bl.querySelector("#nbgps").addEventListener("click",()=>$("gps").click());
   bl.querySelector("#nbtog").addEventListener("click",()=>{ $("nbshow").checked=!st.nb; $("nbshow").dispatchEvent(new Event("change")); });
@@ -868,12 +885,16 @@ function renderNear(){
     card.querySelector(".nmore").addEventListener("click",()=>{ st.lifeMenu=c.id; setSec("life"); });
     grid.appendChild(card);
   });
+  const cardsAll=[...grid.children];
+  if(!st.nearAll&&cardsAll.length>7){ cardsAll.slice(7).forEach(c=>c.hidden=true);
+    const mb=document.createElement("button"); mb.type="button"; mb.className="btn nearall"; mb.textContent=`다른 것도 보기 (${cardsAll.length-7}개 더: 주차장·정비소·충전소·공원 등) ▾`;
+    mb.addEventListener("click",()=>{ st.nearAll=true; cardsAll.forEach(c=>c.hidden=false); mb.remove(); }); grid.after(mb); setTimeout(()=>grid.after(mb),0); }
   loadEvents();
   if(EVT){ const td=ymdKey(now), tm=ymdKey(new Date(now.getTime()+864e5)); let day=td, ev=EVT.items.filter(i=>i[0]===td&&evtPublic(i));
     if(!ev.length){ day=tm; ev=EVT.items.filter(i=>i[0]===tm&&evtPublic(i)); }
     if(ev.length){ const card=document.createElement("section"); card.className="ncard evcard";
       card.innerHTML=`<div class="nh"><h2>📅 ${day===td?"오늘":"내일"} 김천에선</h2><button type="button" class="nmore">다 보까? →</button></div>`+ev.slice(0,4).map(i=>`<div class="nitem"><div class="nl"><b>${esc(i[2])}</b>${i[3]?`<div class="na">📍 ${esc(i[3])}</div>`:""}</div><div class="nr"><span class="nd">${esc(i[1]||"종일")}</span></div></div>`).join("")+(ev.length>4?`<p class="nnote">외 ${ev.length-4}건</p>`:"");
-      card.querySelector(".nmore").addEventListener("click",()=>{ st.herMenu="events"; setSec("her"); }); grid.appendChild(card); } }
+      card.querySelector(".nmore").addEventListener("click",()=>setSec("events")); grid.appendChild(card); } }
   box.appendChild(grid);
   const fyi=document.createElement("p"); fyi.className="status"; fyi.textContent=`기준: ${dayIdx(now)===7?"공휴일":DAYN[dayIdx(now)]+"요일"} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")} · 직선거리`; box.appendChild(fyi);
 }
@@ -893,13 +914,13 @@ function renderNear(){
 let EVT=null;
 const ADMIN_RE=/심의|위원회|회의|워크숍|역량\s*강화|보고회|간담회|연찬|협의회|인구교육|이동검진/;
 function loadEvents(){ if(loadEvents.done) return; loadEvents.done=true;
-  fetch("events.json?t="+Math.floor(Date.now()/600000),{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.items){ EVT=j; menuCount.events=j.items.length; $("menus").dataset.sec=""; sync(); render(); } }).catch(()=>{}); }
+  fetch("events.json?t="+Math.floor(Date.now()/600000),{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.items){ EVT=j; if(st.sec==="events") $("secsub").textContent=SECS.events.sub(); if(st.sec==="near"||st.sec==="events") render(); } }).catch(()=>{}); }
 const evtPublic=i=>!ADMIN_RE.test(i[2]);
 function renderEvents(){
   loadEvents(); $("more").hidden=true; const list=$("list"); list.textContent="";
   if(!EVT){ $("summary").innerHTML="이번 주 행사 불러오는 중…"; return; }
   const today=ymdKey(new Date()); const all=st.evtAll;
-  const items=EVT.items.filter(i=>all||evtPublic(i)).filter(i=>!st.q||(i[2]+" "+i[3]).toLowerCase().includes(st.q));
+  const items=EVT.items.filter(i=>all||evtPublic(i));
   $("summary").innerHTML=`<span>📅 <b>${esc(EVT.title)}</b> · ${items.length}건</span> · <label class="toggle"><input type="checkbox" id="evtall" ${all?"checked":""}> 행정 회의·교육도 보기</label><br><small>출처: <a href="${esc(EVT.src)}" target="_blank" rel="noopener">김천시 누리집 새소식 ‘주간행사계획’</a> · 행사는 사정에 따라 바뀔 수 있어여. 자세한 건 주관부서에 문의</small>`;
   $("evtall").addEventListener("change",e=>{ st.evtAll=e.target.checked; renderEvents(); });
   if(!items.length){ list.innerHTML='<li class="empty">'+mascot("tilt",90)+'<br>이번 주엔 보여드릴 행사가 없어여.</li>'; return; }
@@ -914,7 +935,7 @@ function renderEvents(){
 }
 function render(){
   if(st.sec==="near"){ renderNear(); return; }
-  if(st.sec==="her"&&st.menu==="events"&&!st.q){ renderEvents(); return; }
+  if(st.sec==="events"){ renderEvents(); return; }
   const fuel = st.menu==="fuel";
   let rows = R.filter(r=> nbOk(r) && inSection(r) && (st.q ? true : inMenu(r,st.menu)) && (st.sub==null || r.c===st.sub) && (!st.q || r.s.includes(st.q)));
   if(fuel && !st.q) rows = rows.filter(r=>r.g && r.g[st.fuel]!=null && (!st.memOnly || !r.gasNM));
@@ -1226,7 +1247,7 @@ function openShared(){ const m=location.hash.match(/^#q=(.+)$/); if(!m) return; 
 const FEEDBACK_URL = "https://script.google.com/macros/s/AKfycbxyFc2Sic3Ch8ZT2Hl1uB6hlUQcaEYanFNOhwCXz56SFsqV6fxMjm45kJmWCw8w26gKgQ/exec";   // 예: https://script.google.com/macros/s/……/exec
 (()=>{ const dlg=$("fb"); let mode="private", posts=null;
   let did=load("kc-did"); if(!did){ did=Math.random().toString(36).slice(2,12); store("kc-did",did); }
-  const screen=()=>{ const s={near:"내 주변",life:"생활정보",her:"문화·관광",card:"알뜰혜택"}[st.sec]||st.sec; const m=(LIFE_MENUS.concat(HER_MENUS,D.menus).find(x=>x[0]===st.menu)||[])[1]; return s+(m&&st.sec!=="near"?" > "+m:""); };
+  const screen=()=>{ const s={near:"내 주변",life:"생활정보",her:"문화·관광",card:"알뜰혜택",events:"행사"}[st.sec]||st.sec; const m=(LIFE_MENUS.concat(HER_MENUS,D.menus).find(x=>x[0]===st.menu)||[])[1]; return s+(m&&st.sec!=="near"?" > "+m:""); };
   const setMode=m=>{ mode=m; document.querySelectorAll("[data-fbt]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.fbt===m)));
     const ready=!!FEEDBACK_URL; $("fbnotready").hidden=ready;
     $("fbform").hidden=!ready||(m==="board"&&$("fbboard").dataset.write!=="1"); $("fbboard").hidden=!ready||m!=="board";
