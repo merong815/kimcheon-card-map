@@ -178,6 +178,8 @@ def seen(o, cache, prod=None, ymd=None, price=None):
     st = cache["stations"]
     if prod == "K015" and sid in st:
         st[sid]["lpg"] = "Y"
+    if sid in st and o.get("POLL_DIV_CD") and st[sid].get("brand") != o["POLL_DIV_CD"]:  # 상표(정유사) 채우기·바뀐 것 반영
+        st[sid]["brand"] = o["POLL_DIV_CD"]
     if sid not in st:
         cache["pending"][sid] = {"OS_NM": o.get("OS_NM", ""), "POLL_DIV_CD": o.get("POLL_DIV_CD", ""),
                                  "GIS_X_COOR": o["GIS_X_COOR"], "GIS_Y_COOR": o["GIS_Y_COOR"], "lpg": prod == "K015"}
@@ -318,7 +320,7 @@ def main():
         n_new += 1
     print(f"새 주유소 확인 {n_new}곳, 남은 대기 {len(cache['pending'])}곳")
 
-    # 5) 가맹점: 기존 형식 그대로 (가맹점명 → [주유소명, 경유, 휘발유, LPG, 기준일])
+    # 5) 가맹점 (가맹점명 → [주유소명, 경유, 휘발유, LPG, 기준일, 상표])
     gas = {}
     for s in members:
         p = cache["price"].get(s["id"])
@@ -334,7 +336,7 @@ def main():
         if not p:
             continue
         nm = st.get(s["id"], {}).get("n", s["merchant"])
-        gas[s["merchant"]] = [nm, p.get("1"), p.get("2"), p.get("3"), p.get("d", ymd)]
+        gas[s["merchant"]] = [nm, p.get("1"), p.get("2"), p.get("3"), p.get("d", ymd), st.get(s["id"], {}).get("brand", "")]
 
     # 6) 비가맹 포함 5개 시군 주유소 (주유소ID → [이름, 상표, 주소, 위도, 경도, 경유, 휘발유, LPG, 전화, 시군, 가격일])
     allg = {}
