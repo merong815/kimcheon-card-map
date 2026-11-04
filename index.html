@@ -452,6 +452,7 @@ const FUELN = {1:"경유",2:"휘발유",3:"LPG"};
 const $ = id => document.getElementById(id);
 const won = n => n.toLocaleString("ko-KR");
 const won2 = n => n.toLocaleString("ko-KR",{maximumFractionDigits:2});
+const FEEDBACK_URL = "https://script.google.com/macros/s/AKfycbxyFc2Sic3Ch8ZT2Hl1uB6hlUQcaEYanFNOhwCXz56SFsqV6fxMjm45kJmWCw8w26gKgQ/exec";   // 예: https://script.google.com/macros/s/……/exec
 const st = {sec:"near", cardMenu:"fuel", menu:"near", sub:null, base:null, q:"", fuel:1, sort:"near", liters:50, eff:null, shown:60, view:"list"};
 // ---------- 단골(즐겨찾기): 이 휴대폰에만 저장 ----------
 const favKey=r=>r.menu+"|"+r.n+"|"+(r.lat!=null?r.lat.toFixed(4):"")+"|"+(r.lng!=null?r.lng.toFixed(4):"");
@@ -622,7 +623,12 @@ function loadEV(){ if(loadEV.busy||(EVS&&Date.now()-EVS._t<5*60000)) return; loa
 const evNow=r=>r.ev&&r.ev.sid&&EVS&&EVS.s?EVS.s[r.ev.sid]||null:null;
 const evTag=r=>{ const v=evNow(r); if(!v) return ""; return `<span class="tag ${v[0]>0?"op":"cl"}">빈 충전기 ${v[0]}/${v[1]}${v[3]?` · 급속 ${v[2]}/${v[3]}`:""}</span>`; };
 function loadER(){ if(loadER.busy||(ERB&&Date.now()-ERB._t<5*60000)) return; loadER.busy=true;
-  fetch("er.json?t="+Math.floor(Date.now()/60000),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.beds){ const u=Date.parse(String(j.updated||"").replace(" ","T")+":00+09:00"); if(!(Date.now()-u<3*3600e3)){ j.stale=true; j.beds=null; } ERB=j; ERB._t=Date.now(); if(st.sec==="near"||st.menu==="kid") render(); } }).catch(()=>{}).finally(()=>{loadER.busy=false;}); }
+  const fresh=j=>{ const u=Date.parse(String(j.updated||"").replace(" ","T")+":00+09:00"); return Date.now()-u<3*3600e3; };
+  const use=j=>{ if(!fresh(j)){ j.stale=true; j.beds=null; } ERB=j; ERB._t=Date.now(); if(st.sec==="near"||st.menu==="kid") render(); };
+  const fromFile=()=>fetch("er.json?t="+Math.floor(Date.now()/60000),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.beds) use(j); });
+  // 1순위: 의견함 Apps Script가 실시간으로 중계(10분 캐시) → 안 되면 30분마다 갱신되는 er.json
+  const live = FEEDBACK_URL ? fetch(FEEDBACK_URL+"?er=1").then(r=>r.json()).then(j=>{ if(j&&j.ok&&j.beds&&Object.keys(j.beds).length>20){ use(j); return true; } return false; }).catch(()=>false) : Promise.resolve(false);
+  live.then(ok=>ok?null:fromFile()).catch(()=>{}).finally(()=>{loadER.busy=false;}); }
 // 관광정보(한국관광공사 TourAPI)
 const TOUR_CT={12:["tour12","관광지"],14:["tour14","문화시설"],28:["tour28","레포츠·캠핑"]};
 D.tour.forEach(([ct,n,a,lat,lng,img,tel,ov,hp,emd])=>{
@@ -1308,7 +1314,6 @@ function openShared(){ const m=location.hash.match(/^#q=(.+)$/); if(!m) return; 
   const r=R.find(x=>x.n===name); const sec=!r?"life":(r.her||r.tour)?"her":LIFE_KEYS.some(k=>r[k])?"life":"card";
   if(sec==="card"&&r&&r.menu){ st.cardMenu=r.menu; } setSec(sec); st.q=name.toLowerCase(); $("q").value=name; render(); history.replaceState(null,"",location.pathname); }
 // ---------- 의견함·게시판 (구글 시트 + Apps Script, 주소는 FEEDBACK_URL) ----------
-const FEEDBACK_URL = "https://script.google.com/macros/s/AKfycbxyFc2Sic3Ch8ZT2Hl1uB6hlUQcaEYanFNOhwCXz56SFsqV6fxMjm45kJmWCw8w26gKgQ/exec";   // 예: https://script.google.com/macros/s/……/exec
 (()=>{ const dlg=$("fb"); let mode="private", posts=null;
   let did=load("kc-did"); if(!did){ did=Math.random().toString(36).slice(2,12); store("kc-did",did); }
   const screen=()=>{ const s={near:"내 주변",life:"생활정보",her:"문화·관광",card:"알뜰혜택",events:"행사"}[st.sec]||st.sec; const m=(LIFE_MENUS.concat(HER_MENUS,D.menus).find(x=>x[0]===st.menu)||[])[1]; return s+(m&&st.sec!=="near"?" > "+m:""); };
