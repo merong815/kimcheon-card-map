@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>어데GO 김천 · 이용 통계</title>
+<meta name="robots" content="noindex">
+<style>
+  :root{--bg:#f3f5f4;--surface:#fff;--ink:#18231f;--muted:#5b6862;--line:#dde3e0;--accent:#0f7a5c;--board:#1d2a26;--board-ink:#f4f1e6;--digit:#f2b233}
+  @media (prefers-color-scheme:dark){:root{--bg:#101614;--surface:#18211e;--ink:#e7ece9;--muted:#9fb0a8;--line:#2a3632;--accent:#4cc39a;--board:#0b100e}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;font-size:16px;line-height:1.5}
+  header{background:var(--board);color:var(--board-ink);padding:18px 16px 14px}
+  header h1{margin:0;font-size:22px}
+  header p{margin:4px 0 0;opacity:.8;font-size:14px}
+  header a{color:var(--digit)}
+  main{max-width:980px;margin:0 auto;padding:16px}
+  .tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  @media (min-width:720px){.tiles{grid-template-columns:repeat(4,1fr)}}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .tile .k{font-size:13.5px;color:var(--muted)}
+  .tile .v{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent)}
+  .tile .s{font-size:12.5px;color:var(--muted)}
+  h2{font-size:18px;margin:24px 0 8px}
+  .box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;overflow-x:auto}
+  table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14.5px}
+  th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  thead th{color:var(--muted);font-weight:500}
+  .bars{display:flex;align-items:flex-end;gap:3px;height:140px;padding-top:8px}
+  .bars div{flex:1;background:var(--accent);border-radius:3px 3px 0 0;min-height:2px;position:relative}
+  .bars div:hover::after{content:attr(data-t);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:var(--board);color:#fff;font-size:12px;padding:2px 6px;border-radius:4px;white-space:nowrap}
+  .axis{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px}
+  .note{font-size:13.5px;color:var(--muted)}
+  button{font:inherit;font-weight:700;border:0;border-radius:99px;padding:10px 18px;background:var(--accent);color:#fff;cursor:pointer}
+  textarea{width:100%;min-height:180px;font:inherit;font-size:14.5px;border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg);color:var(--ink)}
+  #err{color:#c92a2a}
+</style>
+</head>
+<body>
+<header>
+  <h1>📊 어데GO 김천 이용 통계</h1>
+  <p id="period">불러오는 중…</p>
+  <p><a href="./">← 앱으로 돌아가기</a></p>
+</header>
+<main>
+  <p id="err" hidden></p>
+  <div class="tiles" id="tiles"></div>
+
+  <h2>보고용 요약</h2>
+  <div class="box">
+    <textarea id="summary" readonly></textarea>
+    <p><button type="button" id="copy">요약 복사</button></p>
+  </div>
+
+  <h2>최근 날짜별 이용 기기 수</h2>
+  <div class="box"><div class="bars" id="bars"></div><div class="axis" id="axis"></div></div>
+
+  <h2>월별</h2>
+  <div class="box"><table id="months"></table></div>
+
+  <h2>많이 본 화면(탭을 누른 횟수)</h2>
+  <div class="box"><table id="tabs"></table></div>
+
+  <p class="note">· 숫자만 세고, 이름·위치·전화번호 같은 개인정보는 받지 않아요. 같은 기기는 하루에 한 번만 ‘이용 기기’로 셉니다.<br>
+  · ‘처음 온 기기’를 모두 더한 값이 지금까지 앱을 써 본 기기 수(누적 이용자 추정)예요. 앱 데이터를 지우거나 다른 브라우저로 열면 새 기기로 셀 수 있어요.<br>
+  · 길찾기·전화·버스 조회·공유·탭별 횟수는 2026년 11월 4일부터 세기 시작했어요(그 전은 날짜별 이용 기기 수만 있음).<br>
+  · 의견 수는 의견함에 실제로 들어온 글(게시판 + 개인 건의) 수예요. 통계는 5분마다 새로 고쳐져요.</p>
+</main>
+<script>
+const URL_ = "https://script.google.com/macros/s/AKfycbxyFc2Sic3Ch8ZT2Hl1uB6hlUQcaEYanFNOhwCXz56SFsqV6fxMjm45kJmWCw8w26gKgQ/exec";
+const $ = id => document.getElementById(id);
+const won = n => Number(n || 0).toLocaleString("ko-KR");
+const dot = d => d ? d.replace(/-/g, ".") : "";
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+fetch(URL_ + "?stats=1", { cache: "no-store" }).then(r => r.json()).then(j => {
+  if (!j || !j.ok) throw new Error(j && j.msg || "통계를 못 받았어요");
+  const T = j.total, P = j.posts || { board: 0, private: 0 }, fb = (P.board || 0) + (P.private || 0);
+  $("period").textContent = `집계 기간 ${dot(j.first)} ~ ${dot(j.updated.slice(0, 10))} · ${j.updated.slice(11)} 기준`;
+  const tiles = [
+    ["누적 이용 기기", T.newUsers, "처음 온 기기 합계"],
+    ["이용(기기·일)", T.users, "날마다 쓴 기기 수 합계"],
+    ["앱 열어본 횟수", T.opens, "11.4부터"],
+    ["길찾기 누름", T.route, "11.4부터"],
+    ["전화 누름", T.call, "11.4부터"],
+    ["버스 도착 조회", T.bus, "11.4부터"],
+    ["공유", T.share, "11.4부터"],
+    ["받은 의견", fb, `게시판 ${won(P.board)} · 건의 ${won(P.private)}`]
+  ];
+  $("tiles").innerHTML = tiles.map(([k, v, s]) => `<div class="tile"><div class="k">${k}</div><div class="v">${won(v)}</div><div class="s">${s}</div></div>`).join("");
+  const days = j.days || [], mx = Math.max(1, ...days.map(d => d.users));
+  $("bars").innerHTML = days.map(d => `<div style="height:${Math.round(d.users / mx * 100)}%" data-t="${dot(d.d).slice(5)} · ${won(d.users)}대"></div>`).join("");
+  $("axis").innerHTML = days.length ? `<span>${dot(days[0].d)}</span><span>${dot(days[days.length - 1].d)}</span>` : "";
+  $("months").innerHTML = `<thead><tr><th>월</th><th>이용(기기·일)</th><th>처음 온 기기</th><th>열어봄</th><th>길찾기</th><th>전화</th><th>버스</th><th>공유</th><th>의견</th></tr></thead><tbody>` +
+    j.months.map(m => `<tr><td>${esc(m.m.replace("-", "년 "))}월</td><td>${won(m.users)}</td><td>${won(m.newUsers)}</td><td>${won(m.opens)}</td><td>${won(m.route)}</td><td>${won(m.call)}</td><td>${won(m.bus)}</td><td>${won(m.share)}</td><td>${won(m.fb)}</td></tr>`).join("") + "</tbody>";
+  const tabs = [["내 주변", T.t_near], ["버스", T.t_bus], ["생활정보", T.t_life], ["문화·관광", T.t_her], ["알뜰혜택", T.t_card], ["행사", T.t_events]];
+  $("tabs").innerHTML = `<thead><tr><th>화면</th><th>누른 횟수</th></tr></thead><tbody>` + tabs.map(([k, v]) => `<tr><td>${k}</td><td>${won(v)}</td></tr>`).join("") + "</tbody>";
+  const avg = days.length ? Math.round(T.users / days.length) : 0;
+  $("summary").value =
+`어데GO 김천(김천사랑카드 가맹점·생활정보 지도) 이용 실적
+· 집계 기간: ${dot(j.first)} ~ ${dot(j.updated.slice(0, 10))} (${days.length >= 60 ? "최근 60일 기준 하루 평균" : days.length + "일, 하루 평균"} 이용 기기 약 ${won(avg)}대)
+· 누적 이용 기기: ${won(T.newUsers)}대 / 누적 이용(기기·일): ${won(T.users)}회
+· 주요 이용(11.4부터): 앱 열람 ${won(T.opens)}회, 길찾기 ${won(T.route)}회, 전화 연결 ${won(T.call)}회, 버스 도착 조회 ${won(T.bus)}회, 공유 ${won(T.share)}회
+· 시민 의견 접수: ${won(fb)}건(게시판 ${won(P.board)}, 개인 건의 ${won(P.private)})
+※ 개인정보 없이 숫자만 집계`;
+}).catch(e => { $("err").hidden = false; $("err").textContent = "통계를 불러오지 못했어요: " + e.message; $("period").textContent = ""; });
+$("copy").addEventListener("click", () => { const t = $("summary"); t.select(); (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject()).then(() => { $("copy").textContent = "복사됐어요 ✓"; }, () => { document.execCommand("copy"); $("copy").textContent = "복사됐어요 ✓"; }); });
+</script>
+</body>
+</html>
