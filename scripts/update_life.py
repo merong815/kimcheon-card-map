@@ -684,6 +684,100 @@ def toilet(cx):
     return out
 
 
+# ---------- 아이랑 갈 데: 키즈카페·놀이시설(행정안전부 전국어린이놀이시설정보, 놀이제공영업소) + 카카오 장소 ----------
+KID_RG = {"경상북도 김천시": "", "경상북도 구미시": "구미", "경상북도 칠곡군": "칠곡", "경상북도 상주시": "상주", "경상북도 성주군": "성주"}
+KID_SUB = [("키즈카페·놀이시설", r"유아 > 놀이시설|놀이교육|테마파크|키즈카페"), ("체험·농장", r"체험학습장|주말농장|청소년수련|교육농장"),
+           ("박물관·과학관", r"박물관|전시관|과학관|동물원"), ("도서관", r"학습시설 > 도서관"), ("캠핑·물놀이·썰매", r"야영,캠핑장|수영장|눈썰매장|인라인|물놀이")]
+KID_Q = ["키즈카페", "키즈까페", "키즈", "플레이타임", "실내놀이터", "놀이터", "체험학습장", "체험농장", "교육농장", "과학관", "박물관", "전시관",
+         "어린이도서관", "도서관", "동물원", "테마파크", "청소년수련관", "물놀이장", "눈썰매장", "숲체험원", "유아숲", "생태공원", "캠핑장", "트램폴린",
+         "방방", "롤러", "아쿠아"]
+
+
+def kidp(cx):
+    def rg_of(nm):
+        nm = nm or ""
+        for k, v in KID_RG.items():
+            if nm.startswith(k):
+                return v
+        m = re.match(r"대구광역시 (\S+[구군])", nm)
+        return "대구 " + m.group(1) if m else None
+    rows = []
+    for p in range(1, 40):
+        d = get(f"https://apis.data.go.kr/1741000/pfc3/getPfctInfo3?serviceKey={q(KEY)}&pageIndex={p}&recordCountPerPage=100&instlPlaceCd=A013")
+        its = (d.get("response", {}).get("body", {}) or {}).get("items") or []
+        for x in its:
+            rg = rg_of(x.get("rgnCdNm"))
+            if x.get("operYnCd") != "B001" or rg is None or not x.get("latCrtsVl"):
+                continue
+            n = re.sub(r"\s*(어린이)?놀이시설$", "", (x.get("pfctNm") or "").strip())
+            rows.append([n, (x.get("ronaAddr") or x.get("lotnoAddr") or "").strip(), "키즈카페·놀이시설",
+                         round(float(x["latCrtsVl"]), 5), round(float(x["lotCrtsVl"]), 5), "", "", rg])
+        if len(its) < 100:
+            break
+    if KAKAO:
+        seen = set()
+        for kw in KID_Q:
+            for page in range(1, 4):
+                try:
+                    req = urllib.request.Request(f"https://dapi.kakao.com/v2/local/search/keyword.json?size=15&page={page}&x=128.1137&y=36.1398&radius=20000&query=" + q(kw),
+                                                 headers={"Authorization": "KakaoAK " + KAKAO})
+                    with urllib.request.urlopen(req, timeout=20) as r:
+                        k = json.loads(r.read().decode("utf-8"))
+                except Exception:
+                    break
+                for x in k.get("documents", []):
+                    if "김천" not in x.get("address_name", "") or x["id"] in seen:
+                        continue
+                    seen.add(x["id"])
+                    c = x.get("category_name", "")
+                    sub = next((s for s, rx in KID_SUB if re.search(rx, c)), None)
+                    if not sub or (sub == "도서관" and re.search(r"학교|대학|독서실|스터디", x["place_name"] + c)):
+                        continue
+                    lat, lng = float(x["y"]), float(x["x"])
+                    nn = re.sub(r"\s", "", x["place_name"])
+                    if any(hav(lat, lng, r[3], r[4]) < 0.1 and (re.sub(r"\s", "", r[0]) in nn or nn in re.sub(r"\s", "", r[0])) for r in rows):
+                        continue
+                    rows.append([x["place_name"], x.get("road_address_name") or x.get("address_name", ""), sub, round(lat, 5), round(lng, 5),
+                                 x.get("phone", ""), x["id"], ""])
+                if k.get("meta", {}).get("is_end", True):
+                    break
+    return rows
+
+
+def fest():
+    """전국 축제(한국관광공사 TourAPI searchFestival2) → fest.json (오늘 이후 끝나는 행사)"""
+    today = datetime.now(KST).strftime("%Y%m%d")
+    items, page = [], 1
+    while page < 10:
+        d = get(f"https://apis.data.go.kr/B551011/KorService2/searchFestival2?serviceKey={q(KEY)}&MobileOS=ETC&MobileApp=adego&_type=json"
+                f"&numOfRows=500&pageNo={page}&eventStartDate={today}&arrange=A")
+        body = d["response"]["body"]
+        its = (body.get("items") or {}).get("item") or [] if isinstance(body.get("items"), dict) else []
+        items += its
+        if len(items) >= int(body.get("totalCount") or 0) or not its:
+            break
+        page += 1
+    out = []
+    for x in items:
+        if not x.get("mapy"):
+            continue
+        out.append([x["title"].strip(), x["eventstartdate"], x["eventenddate"], (x.get("addr1") or "").strip(), round(float(x["mapy"]), 5),
+                    round(float(x["mapx"]), 5), (x.get("tel") or "").strip(), x.get("firstimage2") or "", x["contentid"]])
+    if len(out) < 10:
+        raise RuntimeError(f"축제가 {len(out)}건뿐이라 기존 파일 유지")
+    out.sort(key=lambda r: (r[1], r[0]))
+    try:
+        old = json.load(open("fest.json", encoding="utf-8"))
+        if old.get("items") == out:
+            print("[fest] 바뀐 것 없음")
+            return
+    except (FileNotFoundError, ValueError):
+        pass
+    json.dump({"updated": datetime.now(KST).strftime("%Y-%m-%d %H:%M"), "src": "한국관광공사 TourAPI 행사정보", "items": out},
+              open("fest.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+    print(f"[fest] {len(out)}건 저장")
+
+
 def run_jobs(D, cx, jobs, label="", ok=None):
     """항목별로 받아서 D를 고침. 실패하거나 너무 줄면 기존 자료 유지. 바뀐 항목 목록을 돌려줌(ok에는 성공한 항목 이름)."""
     changed = []
@@ -744,11 +838,15 @@ def main():
     D = json.loads(m.group(1))
     cx = Ctx(D)
     jobs = [("pharm", pharm), ("hosp", hosp), ("kiosk", kiosk), ("park", park), ("shelter", shelter), ("ev", ev), ("repair", repair), ("parking", parking), ("kid", kid), ("er", er),
-            ("aed", aed), ("vet", vet), ("wifi", wifi), ("sports", sports)]
+            ("aed", aed), ("vet", vet), ("wifi", wifi), ("sports", sports), ("kidp", kidp)]
     if COLD_KEY:
         jobs.append(("cold", cold))
     if HEAT_KEY:
         jobs.append(("heat", heat))
+    try:
+        fest()
+    except Exception as e:
+        print(f"[fest] 실패 → 기존 파일 유지: {e}")
     # 김천 공중화장실: 1년에 몇 곳 느는 정도라 보름에 한 번만
     today = datetime.now(KST)
     ta = re.sub(r"\D", "", str(D.get("toiletAsof", "")))[:8]
