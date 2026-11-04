@@ -190,6 +190,8 @@ main{padding-bottom:64px}
 .tag.b-HDO{background:#e6fcf5;color:#087f5b;border-color:#96f2d7}.tag.b-SOL{background:#fff9db;color:#e67700;border-color:#ffe066}
 .tag.b-NHO,.tag.b-RTO,.tag.b-RTX{background:#ebfbee;color:#2b8a3e;border-color:#b2f2bb}
 .alias.cardwarn{color:#c92a2a;font-weight:700}
+.buscard .busno{color:var(--muted);font-size:11.5px}.buscard .busarr{margin-top:4px;display:flex;flex-wrap:wrap;gap:4px}
+.ncard.buscard{border-color:#a5d8ff}
 .skipbtn{display:block;margin:12px auto 0;font-size:15px;padding:10px 16px;border-radius:99px}
 .brandhome{display:flex;align-items:center;gap:4px;color:inherit;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .brandhome:active{opacity:.7}
@@ -608,6 +610,24 @@ function erTags(r){ const b=erBeds(r); let h=`<span class="tag er">${r.erx.ped?e
   h+= p!=null ? `<span class="tag ${b[2]>0?"kid":"cl"}">소아 병상 ${p}</span>` : '<span class="tag loc">소아 병상 따로 없음</span>';
   if(b[4]&&b[4].length>=12) h+=`<span class="tag tf">${b[4].slice(8,10)}:${b[4].slice(10,12)} 기준</span>`;
   return h; }
+// ---------- 버스 언제 오노? (TAGO, 의견함 Apps Script가 중계) ----------
+let BUS={key:null,stops:null,arr:{},t:0,busy:false,err:""};
+function loadBus(force){ if(!FEEDBACK_URL||!st.base||BUS.busy) return; const key=st.base.lat.toFixed(3)+","+st.base.lng.toFixed(3);
+  if(!force&&BUS.key===key&&Date.now()-BUS.t<60000) return; BUS.busy=true;
+  const near=BUS.key===key&&BUS.stops ? Promise.resolve(BUS.stops) : fetch(`${FEEDBACK_URL}?bus=near&lat=${st.base.lat.toFixed(5)}&lng=${st.base.lng.toFixed(5)}`).then(r=>r.json()).then(j=>{ if(!j.ok) throw new Error(j.msg||"정류장 실패"); return j.stops; });
+  near.then(stops=>{ stops=stops.map(s=>Array.isArray(s)?({c:s[0],id:s[1],n:s[2],no:s[3],lat:s[4],lng:s[5],d:hav(st.base.lat,st.base.lng,s[4],s[5])}):s).sort((a,b)=>a.d-b.d).slice(0,4);
+      return Promise.all(stops.map(s=>fetch(`${FEEDBACK_URL}?bus=arr&c=${s.c}&id=${encodeURIComponent(s.id)}`).then(r=>r.json()).catch(()=>null))).then(as=>{ const arr={}; stops.forEach((s,i)=>arr[s.id]=as[i]&&as[i].ok?as[i].arr:null); BUS={key,stops,arr,t:Date.now(),busy:false,err:""}; }); })
+    .catch(e=>{ BUS.err=String(e.message||e); BUS.key=key; BUS.t=Date.now(); })
+    .finally(()=>{ BUS.busy=false; if(st.sec==="near") render(); }); }
+const busMin=s=>s<60?"곧 도착":Math.round(s/60)+"분";
+function busCard(){ const card=document.createElement("section"); card.className="ncard buscard";
+  const ok=BUS.stops&&BUS.key===(st.base.lat.toFixed(3)+","+st.base.lng.toFixed(3));
+  card.innerHTML=`<div class="nh"><h2>🚌 버스 언제 오노?</h2><button type="button" class="nmore busref">↻ 새로</button></div>`+
+    (!ok ? `<p class="nnote">${BUS.err?"버스 정보를 못 불러왔어여 😅 ‘새로’를 눌러 보세여.":"가까운 정류장 찾는 중…"}</p>` :
+     BUS.stops.map(s=>{ const a=BUS.arr[s.id]; return `<div class="nitem"><div class="nl"><b>${esc(s.n)}</b> <small class="busno">${esc(String(s.no))}</small><div class="busarr">${a==null?"도착 정보 못 받음":a.length?a.slice(0,4).map(x=>`<span class="tag ${x[1]<300?"op":"tf"}">${esc(x[0])}번 ${busMin(x[1])}${x[2]?` · ${x[2]}정거장 전`:""}</span>`).join(" "):'<span class="tag loc">곧 오는 버스 없음</span>'}</div></div><div class="nr"><span class="nd">${fmtKm(s.d)}</span><a href="https://map.kakao.com/link/map/${encodeURIComponent(s.n)},${s.lat},${s.lng}" target="_blank" rel="noopener">지도</a></div></div>`; }).join("")+
+     `<p class="nnote">국토교통부 실시간 도착 정보 · ${new Date(BUS.t).toTimeString().slice(0,5)} 기준 · 같은 이름 정류장은 길 건너편(방향이 달라여)</p>`);
+  card.querySelector(".busref").addEventListener("click",()=>{ card.querySelector(".busref").textContent="⏳"; loadBus(true); });
+  return card; }
 // 김천 날씨·미세먼지(wx.json, 30분마다)
 let WX=null;
 function loadWX(){ if(loadWX.busy||(WX&&Date.now()-WX._t<10*60000)) return; loadWX.busy=true;
@@ -958,6 +978,7 @@ function renderNear(){
     card.querySelector(".nmore").addEventListener("click",()=>{ st.lifeMenu=c.id; setSec("life"); });
     grid.appendChild(card);
   });
+  if(FEEDBACK_URL){ loadBus(); const bc=busCard(); const cards=[...grid.children]; const ph=cards.find(c=>/약 사러/.test(c.textContent)); if(ph&&ph.nextSibling) grid.insertBefore(bc,ph.nextSibling); else grid.appendChild(bc); }
   const cardsAll=[...grid.children];
   if(!st.nearAll&&cardsAll.length>7){ cardsAll.slice(7).forEach(c=>c.hidden=true);
     const mb=document.createElement("button"); mb.type="button"; mb.className="btn nearall"; mb.textContent=`다른 것도 보기 (${cardsAll.length-7}개 더: 주차장·정비소·충전소·공원 등) ▾`;
