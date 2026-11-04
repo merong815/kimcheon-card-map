@@ -183,6 +183,8 @@ main{padding-bottom:64px}
 .wxbar{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin:0 0 10px;font-size:14px;line-height:1.6}
 .wxbar small{color:var(--muted)}.wxbar .g1{color:#1c7ed6}.wxbar .g2{color:#2b8a3e}.wxbar .g3{color:#e8590c}.wxbar .g4{color:#c92a2a}
 .skipbtn{display:block;margin:12px auto 0;font-size:15px;padding:10px 16px;border-radius:99px}
+.brandhome{display:flex;align-items:center;gap:4px;color:inherit;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.brandhome:active{opacity:.7}
 .bigbtn{margin-left:auto;font-family:"Jua",sans-serif;font-size:17px;line-height:1;border:1px solid rgba(255,255,255,.35);background:transparent;color:inherit;border-radius:10px;padding:6px 10px;cursor:pointer}
 .brand{display:flex;align-items:center;gap:4px}
 body.big header .wrap,body.big .ctl .wrap,body.big #near,body.big #summary,body.big #list,body.big #more,body.big #fb,body.big .viewbar{zoom:1.2}
@@ -320,7 +322,7 @@ body.compact .ctlopen{display:inline-block;position:absolute;right:12px;top:6px;
 
 
 <header><div class="wrap">
-  <h1 class="brand"><span class="bm"></span>어데<b>GO</b> <span>김천</span><button type="button" id="bigfont" class="bigbtn" aria-pressed="false" title="글씨 크게">가<b>+</b></button></h1>
+  <h1 class="brand"><a href="./" id="brandhome" class="brandhome" title="새로고침" aria-label="어데GO 김천 새로고침"><span class="bm"></span>어데<b>GO</b> <span>김천</span></a><button type="button" id="bigfont" class="bigbtn" aria-pressed="false" title="글씨 크게">가<b>+</b></button></h1>
   <div class="secs" role="tablist" aria-label="정보 종류">
     <button class="sec" id="sec-near" data-sec="near" role="tab" aria-selected="true">내 주변</button>
     <button class="sec" id="sec-life" data-sec="life" role="tab" aria-selected="false">생활정보</button>
@@ -443,6 +445,17 @@ const $ = id => document.getElementById(id);
 const won = n => n.toLocaleString("ko-KR");
 const won2 = n => n.toLocaleString("ko-KR",{maximumFractionDigits:2});
 const st = {sec:"near", cardMenu:"fuel", menu:"near", sub:null, base:null, q:"", fuel:1, sort:"near", liters:50, eff:null, shown:60, view:"list"};
+// ---------- 단골(즐겨찾기): 이 휴대폰에만 저장 ----------
+const favKey=r=>r.menu+"|"+r.n+"|"+(r.lat!=null?r.lat.toFixed(4):"")+"|"+(r.lng!=null?r.lng.toFixed(4):"");
+let FAV=new Set(); try{ FAV=new Set(JSON.parse(load("kc-fav")||"[]")); }catch(e){}
+const isFav=r=>FAV.has(favKey(r));
+function toggleFav(r){ const k=favKey(r); if(FAV.has(k)) FAV.delete(k); else FAV.add(k); store("kc-fav",JSON.stringify([...FAV]));
+  toast(FAV.has(k)?"★ 단골에 넣었어여. ‘내 주변’ 맨 위에 보여여":"단골에서 뺐어여"); render(); }
+// 왼쪽 위 로고: 누르면 새로고침(최신 자료 다시 받기)
+$("brandhome").addEventListener("click",e=>{ e.preventDefault(); location.replace(location.pathname); });
+// ---------- 큰 글씨 모드(어르신용) ----------
+(()=>{ const b=$("bigfont"); const set=v=>{ document.body.classList.toggle("big",v); b.setAttribute("aria-pressed",String(v)); b.innerHTML=v?"가<b>−</b>":"가<b>+</b>"; b.title=v?"글씨 원래대로":"글씨 크게"; };
+  set(load("kc-big")==="1"); b.addEventListener("click",()=>{ const v=!document.body.classList.contains("big"); set(v); store("kc-big",v?"1":"0"); if(M&&M.invalidate) try{M.invalidate();}catch(e){} }); })();
 function store(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 function load(k){try{return localStorage.getItem(k)}catch(e){return null}}
 $("asof").textContent = `${D.asof.slice(0,4)}.${D.asof.slice(4,6)}.${D.asof.slice(6)}`;
@@ -1252,15 +1265,6 @@ fetch("prices.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(p=>{
   $("asof").textContent = p.updated || `${p.asof.slice(0,4)}.${p.asof.slice(4,6)}.${p.asof.slice(6)}`;
   render();
 }).catch(()=>{});
-// ---------- 단골(즐겨찾기): 이 휴대폰에만 저장 ----------
-const favKey=r=>r.menu+"|"+r.n+"|"+(r.lat!=null?r.lat.toFixed(4):"")+"|"+(r.lng!=null?r.lng.toFixed(4):"");
-let FAV=new Set(); try{ FAV=new Set(JSON.parse(load("kc-fav")||"[]")); }catch(e){}
-const isFav=r=>FAV.has(favKey(r));
-function toggleFav(r){ const k=favKey(r); if(FAV.has(k)) FAV.delete(k); else FAV.add(k); store("kc-fav",JSON.stringify([...FAV]));
-  toast(FAV.has(k)?"★ 단골에 넣었어여. ‘내 주변’ 맨 위에 보여여":"단골에서 뺐어여"); render(); }
-// ---------- 큰 글씨 모드(어르신용) ----------
-(()=>{ const b=$("bigfont"); const set=v=>{ document.body.classList.toggle("big",v); b.setAttribute("aria-pressed",String(v)); b.innerHTML=v?"가<b>−</b>":"가<b>+</b>"; b.title=v?"글씨 원래대로":"글씨 크게"; };
-  set(load("kc-big")==="1"); b.addEventListener("click",()=>{ const v=!document.body.classList.contains("big"); set(v); store("kc-big",v?"1":"0"); if(M&&M.invalidate) try{M.invalidate();}catch(e){} }); })();
 // ---------- 장소별 공유·정보 틀림 ----------
 let UID=0; const UIDS={};
 function uidOf(r){ if(!r.uid){ r.uid=++UID; UIDS[r.uid]=r; } return r.uid; }
