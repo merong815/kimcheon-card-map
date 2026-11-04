@@ -35,6 +35,7 @@ jobs:
       - name: 바뀐 자료 저장
         run: |
           git add index.html nb
+          if [ -f fest.json ]; then git add fest.json; fi
           if git diff --cached --quiet; then
             echo "바뀐 자료 없음"
             exit 0
