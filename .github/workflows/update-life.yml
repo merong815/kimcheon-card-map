@@ -33,15 +33,29 @@ jobs:
         run: python scripts/update_life.py
 
       - name: 바뀐 자료 저장
+        # 받는 데 1시간 넘게 걸려서, 그 사이 사람이 index.html을 올려도 충돌 없게
+        # 최신 저장소를 다시 받은 뒤 생활정보 항목(life_patch.json)·nb·fest.json만 덮어씀
         run: |
-          git add index.html nb
-          if [ -f fest.json ]; then git add fest.json; fi
-          if git diff --cached --quiet; then
-            echo "바뀐 자료 없음"
-            exit 0
-          fi
+          mkdir -p /tmp/out
+          if [ -d nb ]; then cp -r nb /tmp/out/; fi
+          for f in fest.json life_patch.json; do if [ -f "$f" ]; then cp "$f" /tmp/out/; fi; done
           git config user.name "life-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "생활정보 갱신 $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')"
-          git pull --rebase
-          git push
+          for i in 1 2 3; do
+            git fetch origin main
+            git reset --hard origin/main
+            if [ -d /tmp/out/nb ]; then mkdir -p nb && cp -r /tmp/out/nb/. nb/; fi
+            if [ -f /tmp/out/fest.json ]; then cp /tmp/out/fest.json .; fi
+            if [ -f /tmp/out/life_patch.json ]; then python scripts/update_life.py --apply /tmp/out/life_patch.json; fi
+            git add index.html nb
+            if [ -f fest.json ]; then git add fest.json; fi
+            if git diff --cached --quiet; then
+              echo "바뀐 자료 없음"
+              exit 0
+            fi
+            git commit -m "생활정보 갱신 $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')"
+            if git push; then exit 0; fi
+            echo "올리기 실패 → 다시 시도 ($i)"
+            sleep 10
+          done
+          exit 1
