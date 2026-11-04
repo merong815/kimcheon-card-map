@@ -27,6 +27,12 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
+<script>
+var INAPP=(function(ua){ try{ return /NAVER\(inapp|KAKAOTALK|Instagram|FBAN|FBAV|Line\/|DaumApps|everytimeApp|BAND\//i.test(ua) && !/어데GO|kimcheon/i.test(ua) ? (/NAVER/i.test(ua)?"네이버":/KAKAOTALK/i.test(ua)?"카카오톡":/Instagram/i.test(ua)?"인스타그램":/FBAN|FBAV/i.test(ua)?"페이스북":/Line\//i.test(ua)?"라인":/DaumApps/i.test(ua)?"다음":/BAND\//i.test(ua)?"밴드":"") : ""; }catch(e){ return ""; } })(navigator.userAgent||"");
+(function(){ try{ var ua=navigator.userAgent||"";
+  if(/KAKAOTALK/i.test(ua) && !sessionStorage.getItem("kc-ext")){ sessionStorage.setItem("kc-ext","1");
+    location.href="kakaotalk://web/openExternal?url="+encodeURIComponent(location.href); } }catch(e){} })();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&family=Jua&display=swap">
 <style>
@@ -269,6 +275,29 @@ li.it.good{border-color:var(--good);background:linear-gradient(90deg,var(--good-
 .calc dd.g.neg{color:var(--warn)}
 .price .cost{font-size:13px;color:var(--muted)}
 .price .cost b{color:var(--ink);font-family:var(--f-num)}
+/* 쉬운 보기: 처음엔 이름·상태·거리·전화·길찾기만, 누르면 자세히 */
+li.it.fold{cursor:pointer}
+li.it.fold .nm .t{font-size:18px}
+li.it.fold:not(.open) .ad,li.it.fold:not(.open) .calc{display:none}
+li.it.fold:not(.open):not(.keeptags) .nm>span.tag:nth-of-type(n+4){display:none}
+li.it.fold:not(.open) .links>*:not(.call):not(.route):not(.foldbtn){display:none}
+li.it.fold:not(.open) .links a.call .tel{display:none}
+li.it.fold .links a.call,li.it.fold .links a.route{font-size:16px;padding:8px 16px;border-radius:99px;font-weight:700}
+li.it.fold .links a.route{background:var(--accent-soft);color:var(--accent)}
+.tag.mem{background:#fff1c2;color:#6b4a00;border:1px solid #f0cf6a;font-weight:700}
+li.it.fold:not(.open):not(.keeptags) .nm>span.tag.mem{display:inline-block}
+.foldbtn{margin-left:auto;background:none;border:1px solid var(--line);border-radius:99px;padding:7px 13px;font-size:14.5px;color:var(--muted);cursor:pointer;font-family:inherit}
+.ncard .nitem{cursor:pointer}
+.ncard .nitem .nl>b:first-child{font-size:17px}
+.ncard .nitem:not(.open) .na{display:none}
+.ncard .nitem:has(.na) .nl>b:first-child::after{content:" ▾";font-size:12px;color:var(--muted);font-weight:400}
+.ncard .nitem.open .nl>b:first-child::after{content:" ▴"}
+.nr{gap:6px}.nr a{font-size:14.5px;font-weight:700;text-decoration:none;border:1px solid var(--accent);border-radius:99px;padding:4px 12px;color:var(--accent)}
+.inapp{background:#fff4d6;color:#3a2a00;border-bottom:1px solid #f0d58a;padding:10px 16px;font-size:15px;line-height:1.45}
+.inapp b{font-size:16px}.inapp .ia{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.inapp button,.inapp a{font:inherit;font-weight:700;border:0;border-radius:99px;padding:8px 14px;background:#0f7a5c;color:#fff;text-decoration:none;cursor:pointer}
+.inapp .x{background:none;color:#6b5a2a;padding:8px 6px;font-weight:500}
+#addrform[hidden]{display:none}
 .links{grid-column:1/-1;display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:13.5px;margin-top:5px}
 .links a{color:var(--accent);text-decoration:none;font-weight:500}
 .links a.main{font-weight:700}
@@ -355,9 +384,10 @@ body.compact .ctlopen{display:inline-block;position:absolute;right:12px;top:6px;
   <div class="row">
     <select id="base" aria-label="기준 위치"></select>
     <button class="btn" id="gps" type="button">내 위치</button>
+    <button class="btn" id="addrtog" type="button">주소로</button>
     <input type="search" id="q" placeholder="뭐 찾노? 이름·주소로 검색" aria-label="검색">
   </div>
-  <form class="row" id="addrform">
+  <form class="row" id="addrform" hidden>
     <input type="search" id="addr" placeholder="기준 주소 입력 (예: 혁신3로 15, 코아루, 김천역)" aria-label="기준 위치 주소">
     <button class="btn" id="addrgo" type="submit">기준으로</button>
   </form>
@@ -377,6 +407,7 @@ body.compact .ctlopen{display:inline-block;position:absolute;right:12px;top:6px;
     <label for="eff" class="status">내 차 연비</label><input type="number" id="eff" min="1" max="50" step="0.1" placeholder="예: 14"><span class="status">km/L</span>
   </div>
   <div class="row" id="liferow" hidden>
+    <label class="toggle" id="cardwrap" for="cardonly"><input type="checkbox" id="cardonly"> 💳 김천사랑카드 되는 곳만</label>
     <label class="toggle" id="openwrap" for="openonly"><input type="checkbox" id="openonly"> 지금 영업 중인 곳만</label>
     <span id="pharmwrap"><label class="toggle" for="lateonly"><input type="checkbox" id="lateonly"> 오늘 밤 10시까지 이상 영업</label> <label class="toggle" for="holonly"><input type="checkbox" id="holonly"> 일요일·공휴일 영업</label></span>
     <span id="sportwrap"><label class="toggle" for="simplesp"><input type="checkbox" id="simplesp"> 마을 간이운동장(운동기구)도 보기</label></span>
@@ -675,6 +706,20 @@ const NB={"구미":{f:"nb/gumi.json",c:[36.1195,128.3445]},"상주":{f:"nb/sangj
   "대구 남구":{f:"nb/dg-nam.json",c:[35.846,128.5974],dg:1,r:12},"대구 북구":{f:"nb/dg-buk.json",c:[35.8858,128.5828],dg:1,r:14},"대구 수성구":{f:"nb/dg-suseong.json",c:[35.8582,128.6306],dg:1,r:13},
   "대구 달서구":{f:"nb/dg-dalseo.json",c:[35.8298,128.5326],dg:1,r:13},"대구 달성군":{f:"nb/dg-dalseong.json",c:[35.7746,128.4314],dg:1,r:22},"대구 군위군":{f:"nb/dg-gunwi.json",c:[36.2428,128.5728],dg:1,r:22}};
 const rgOf=r=>r.rg||(r.kid&&r.kid.rg)||"";
+// ---------- 김천사랑카드 가맹 여부: 병원·치과·약국·정비소·동물병원·관광지 등을 가맹점 목록과 이름+위치로 맞춰 봄 ----------
+const MEM_MENUS=["pharm","hosp","dent","kid","repair","vet","tour"];
+const memName=s=>String(s||"").replace(/\(.*?\)|주식회사|㈜|\s|[·.,\-]/g,"").toLowerCase();
+function markMembers(){ const idx={}, grid={}, gk=(a,b)=>Math.round(a*200)+":"+Math.round(b*200);
+  for(let i=0;i<D.rows.length;i++){ const m=R[i]; if(m.lat==null) continue; const k=memName(m.n); m._mk=k; if(k.length>=2) (idx[k]||(idx[k]=[])).push(m); (grid[gk(m.lat,m.lng)]||(grid[gk(m.lat,m.lng)]=[])).push(m); }
+  const near=(r)=>{ const a=Math.round(r.lat*200), b=Math.round(r.lng*200), out=[]; for(let x=-1;x<=1;x++) for(let y=-1;y<=1;y++){ const g=grid[(a+x)+":"+(b+y)]; if(g) out.push(...g); } return out; };
+  for(let i=D.rows.length;i<R.length;i++){ const r=R[i]; if(r.mem!=null||!(MEM_MENUS.includes(r.menu)||r.tour)) continue;
+    const g=rgOf(r); if(g&&g!=="김천"){ r.mem=false; continue; }   // 이웃 지역은 김천사랑카드 못 씀
+    if((r.pharm&&r.pharm.member)||(r.repair&&r.repair.member)){ r.mem=true; continue; }
+    if(r.lat==null){ r.mem=false; continue; }
+    const k=memName(r.n), c=idx[k];
+    // 같은 이름이 250m 안에 있거나, 가맹점 이름을 품고(3글자 이상, '○○내과의원'⊃'○○내과') 80m 안에 있으면 가맹
+    r.mem=!!(c&&c.some(m=>hav(r.lat,r.lng,m.lat,m.lng)<0.25)) || (k.length>=3&&near(r).some(m=>m._mk.length>=3&&k.includes(m._mk)&&hav(r.lat,r.lng,m.lat,m.lng)<0.08)); } }
+markMembers();
 const isNb=r=>{const g=rgOf(r); return !!g&&g!=="김천";};
 const nbLoaded={};
 function loadNB(){ if(!st.nbSel.size||!st.base) return;
@@ -749,7 +794,7 @@ const SECS={
   bus:{menu:"near",sub:()=>"버스 언제 오노? 가까운 정류장 실시간 도착 정보 🚌"},
   card:{sub:()=>`기름 어데가 싸노? 주유 할인 비교 · 착한가격업소 ${D.good.length}곳 · 김천사랑카드 가맹점 ${won(D.rows.length)}곳`},
   good:{menu:"good",sub:()=>`김천시 지정 착한가격업소 ${D.good.length}곳 · 김천사랑카드 가맹 ${D.good.filter(g=>g[8].length).length}곳`},
-  life:{menu:"pharm",sub:()=>`병원·치과·약국·쉼터·화장실… 김천 생활정보 다 여 있다 · 지금 문 연 약국 ${R.filter(r=>r.pharm&&pharmState(r).open).length}곳`},
+  life:{menu:"pharm",sub:()=>`지금 문 연 약국 ${R.filter(r=>r.pharm&&pharmState(r).open).length}곳`},
   events:{menu:"events",sub:()=>EVT?`이번 주 김천 행사 ${EVT.items.filter(evtPublic).length}건 · 김천시 누리집 ‘주간행사계획’`:"이번 주 김천 행사 · 김천시 누리집 ‘주간행사계획’"},
   her:{menu:"heritage",sub:()=>`문화재 ${D.her.length}건(국가유산청) · 관광지·문화시설·레포츠 ${D.tour.length}곳(한국관광공사)`}
 };
@@ -818,6 +863,8 @@ function setNbGroup(g,on){ if(on) st.nbSel.add(g); else st.nbSel.delete(g); stor
 document.addEventListener("click",e=>{ const b=e.target.closest(".nbchip"); if(b) setNbGroup(b.dataset.nbg,!st.nbSel.has(b.dataset.nbg)); });
 
 $("memonly").addEventListener("change",e=>{ st.memOnly=e.target.checked; store("kc-memonly",st.memOnly?"1":"0"); st.shown=60; if(st.view==="map") lastKey=null; render(); });
+$("cardonly").addEventListener("change",e=>{ st.cardOnly=e.target.checked; store("kc-cardonly",st.cardOnly?"1":"0"); st.shown=60; if(st.view==="map") lastKey=null; render(); });
+st.cardOnly=load("kc-cardonly")==="1"; $("cardonly").checked=st.cardOnly;
 $("openonly").addEventListener("change",e=>{ st.openOnly=e.target.checked; st.shown=60; render(); });
 $("lateonly").addEventListener("change",e=>{ st.lateOnly=e.target.checked; st.shown=60; render(); });
 $("holonly").addEventListener("change",e=>{ st.holOnly=e.target.checked; st.shown=60; render(); });
@@ -839,6 +886,8 @@ function sync(){
   document.querySelectorAll("#menus .chip, #menus2 .chip").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.g ? b.dataset.g===lifeGroupOf(st.menu) : b.dataset.m===st.menu)));
   $("fuelrow").hidden = st.menu!=="fuel" || st.sec!=="card";
   $("liferow").hidden = st.sec!=="life" || !(HRS_MENUS.includes(st.menu)||st.menu==="ev"||st.menu==="toilet"); $("toiletwrap").hidden = st.menu!=="toilet"; $("sportwrap").hidden = st.menu!=="sports"; if(st.sec==="life"&&st.menu==="sports") $("liferow").hidden=false;
+  if(!$("cardwrap").hidden) $("liferow").hidden=false;
+  $("cardwrap").hidden = !((st.sec==="life"&&MEM_MENUS.includes(st.menu))||st.sec==="her");
   $("openwrap").hidden = !HRS_MENUS.includes(st.menu); $("pharmwrap").hidden = st.menu!=="pharm"; $("nowtxt").hidden = !HRS_MENUS.includes(st.menu); $("evwrap").hidden = st.menu!=="ev";
   buildSubs();
 }
@@ -941,7 +990,7 @@ function nearCats(now=new Date()){
 function renderNear(){
   const box=$("near"); box.textContent="";
   const emdGrid=()=>`<div class="emdgrid">${Object.keys(D.cen).sort((a,b)=>a.localeCompare(b,"ko")).map(e=>`<button type="button" class="emdbtn" data-e="e:${e}">${e}</button>`).join("")}</div><details class="nbmore"><summary>이웃 시군·대구에서 보기 ▾</summary><p class="nbhead">이웃 시군</p><div class="emdgrid nbgrid">${Object.keys(NB).filter(g=>!NB[g].dg).map(g=>`<button type="button" class="emdbtn nbbtn2" data-e="n:${g}">${g}</button>`).join("")}</div><p class="nbhead">대구</p><div class="emdgrid nbgrid">${Object.keys(NB).filter(g=>NB[g].dg).map(g=>`<button type="button" class="emdbtn nbbtn2" data-e="n:${g}">${g.replace("대구 ","")}</button>`).join("")}</div></details>`;
-  const bindEmd=()=>box.querySelectorAll(".emdbtn").forEach(b=>b.addEventListener("click",()=>{ sel.value=b.dataset.e; sel.dispatchEvent(new Event("change")); window.scrollTo({top:0}); }));
+  const bindEmd=()=>box.querySelectorAll(".emdbtn").forEach(b=>b.addEventListener("click",()=>{ st.nearPick=false; sel.value=b.dataset.e; sel.dispatchEvent(new Event("change")); window.scrollTo({top:0}); }));
   if(!st.base){
     const failed=$("status").classList.contains("warn");
     box.innerHTML=`<div class="nearintro">${mascot("wave",150)}<p class="nbig">여가 김천 어데GO?</p><p class="nbig2">약국 어데고? 화장실 어데고?</p>
@@ -961,12 +1010,13 @@ function renderNear(){
   const now=new Date();
   const bl=document.createElement("div"); bl.className="nbase";
   const isGps=sel.value==="gps";
-  bl.innerHTML=`📍 기준: <b>${isGps?"내 위치":sel.value==="pin"?esc(oP.textContent):esc((sel.value||"").replace(/^[en]:/,"")+(sel.value.startsWith("n:")?((NB[sel.value.slice(2)]||{}).dg?" 구청 부근":" 시내"):" 중심"))}</b>${window.__gpsBusy?' '+mascot("look",34)+' <span class="tag cl">지금 위치 찾는 중… (지난번 위치로 먼저 보여드려여)</span>':""}${isGps?"":` <button type="button" id="nbgps" class="nbbtn">내 위치로 바꾸기</button>`} <button type="button" id="nbemd" class="nbbtn">동네 다시 고르기</button><div class="nbsel nearsel">${nbChips()}</div>`;
+  bl.innerHTML=`📍 기준: <b>${isGps?"내 위치":sel.value==="pin"?esc(oP.textContent):esc((sel.value||"").replace(/^[en]:/,"")+(sel.value.startsWith("n:")?((NB[sel.value.slice(2)]||{}).dg?" 구청 부근":" 시내"):" 중심"))}</b>${window.__gpsBusy?' '+mascot("look",34)+' <span class="tag cl">지금 위치 찾는 중… (지난번 위치로 먼저 보여드려여)</span>':""}${isGps?"":` <button type="button" id="nbgps" class="nbbtn">내 위치로 바꾸기</button>`} <button type="button" id="nbemd" class="nbbtn">동네·이웃 지역 고르기</button>`;
   box.appendChild(bl);
   if(st.sec==="bus"){ const ns=bl.querySelector(".nearsel"); if(ns) ns.remove(); if(FEEDBACK_URL){ loadBus(); box.appendChild(busCard(true)); } return; }
   loadWX(); if(WX&&!WX.stale){ const w=document.createElement("div"); w.className="wxbar"; w.innerHTML=wxLine(); box.appendChild(w); }
   if(!isGps) bl.querySelector("#nbgps").addEventListener("click",()=>$("gps").click());
-  bl.querySelector("#nbemd").addEventListener("click",()=>{ const g=box.querySelector(".emdpick"); if(g){g.remove();return;} const d=document.createElement("div"); d.className="emdpick"; d.innerHTML=emdGrid(); bl.after(d); bindEmd(); });
+  bl.querySelector("#nbemd").addEventListener("click",()=>{ st.nearPick=!st.nearPick; render(); });
+  if(st.nearPick){ const d=document.createElement("div"); d.className="emdpick"; d.innerHTML=`<div class="nbsel nearsel">${nbChips()}</div>`+emdGrid(); bl.after(d); bindEmd(); }
   const grid=document.createElement("div"); grid.className="neargrid";
   if(FAV.size){ const fv=R.filter(r=>r.lat!=null&&isFav(r)); fv.forEach(r=>{ r.d=hav(st.base.lat,st.base.lng,r.lat,r.lng); r.ps=(r.hos||r.pharm||r.kio||r.office||r.erx)?lifeState(r,now):null; }); fv.sort((a,b)=>a.d-b.d);
     if(fv.length){ const card=document.createElement("section"); card.className="ncard favcard";
@@ -988,7 +1038,7 @@ function renderNear(){
     const card=document.createElement("section"); card.className="ncard"+(c.kid?" kidcard":"");
     card.innerHTML=`<div class="nh"><h2>${esc(c.t)}</h2><button type="button" class="nmore">다 보까? →</button></div>`+
       (c.kid?`<p class="nnote kidnote">숨쉬기 힘들거나 의식이 흐리면 바로 <a href="tel:119">☎119</a> · 출발 전 전화 확인</p>`:"")+(c.note?`<p class="nnote">${esc(c.note)}</p>`:"")+(closedNote?`<p class="nnote">${closedNote}</p>`:"")+
-      pick.map(r=>`<div class="nitem"><div class="nl"><b>${esc(r.n)}</b>${r.kid&&r.kid.old?`<small class="oldn">(옛 ${esc(r.kid.old.split("·")[0])})</small>`:""}${r.ps?` <span class="tag ${r.ps.open?"op":"cl"}">${esc(r.ps.text)}</span>`:""}${r.hos&&r.hos.er?' <span class="tag er">응급실</span>':""}${isNb(r)?` <span class="tag rg">${esc(rgOf(r))}</span>`:""}${r.kid&&r.kid.moon?` <span class="tag moon">${esc(moonTag(r))}</span>`:""}${r.ev?" "+evTag(r):""}${r.erx?" "+erTags(r).replace(/<span class="tag er">응급실 24시간<\/span>/,""):""}${PUBNIGHT[r.n]?' <span class="tag pn">공공심야약국</span>':""}<div class="na">${esc(r.a)}</div></div><div class="nr"><span class="nd">${fmtKm(r.d)}</span><a href="https://map.kakao.com/link/to/${encodeURIComponent(r.n)},${r.lat},${r.lng}" target="_blank" rel="noopener">길찾기</a>${r.ph&&!r.park?`<a href="${telHref(r.ph)}">전화</a>`:""}</div></div>`).join("")+
+      pick.map(r=>`<div class="nitem"><div class="nl"><b>${esc(r.n)}</b>${r.kid&&r.kid.old?`<small class="oldn">(옛 ${esc(r.kid.old.split("·")[0])})</small>`:""}${r.ps?` <span class="tag ${r.ps.open?"op":"cl"}">${esc(r.ps.text)}</span>`:""}${r.hos&&r.hos.er?' <span class="tag er">응급실</span>':""}${r.mem?' <span class="tag mem">💳 김천사랑카드</span>':""}${isNb(r)?` <span class="tag rg">${esc(rgOf(r))}</span>`:""}${r.kid&&r.kid.moon?` <span class="tag moon">${esc(moonTag(r))}</span>`:""}${r.ev?" "+evTag(r):""}${r.erx?" "+erTags(r).replace(/<span class="tag er">응급실 24시간<\/span>/,""):""}${PUBNIGHT[r.n]?' <span class="tag pn">공공심야약국</span>':""}<div class="na">${esc(r.a)}</div></div><div class="nr"><span class="nd">${fmtKm(r.d)}</span><a href="https://map.kakao.com/link/to/${encodeURIComponent(r.n)},${r.lat},${r.lng}" target="_blank" rel="noopener">길찾기</a>${r.ph&&!r.park?`<a href="${telHref(r.ph)}">전화</a>`:""}</div></div>`).join("")+
       (pick.length?"":`<p class="nnote">가까운 데가 없어여.</p>`);
     card.querySelector(".nmore").addEventListener("click",()=>{ st.lifeMenu=c.id; setSec("life"); });
     grid.appendChild(card);
@@ -1042,12 +1092,29 @@ function renderEvents(){
     li.querySelector(".alias").textContent=(i[4]?"주관: "+i[4]:"")+(i[5]?" · "+i[5]:"");
     list.appendChild(li); });
 }
+// 네이버·카톡 등 앱 안 브라우저 안내: 위치를 매번 물어보니 바깥 브라우저로 열기를 권함
+(function(){ if(!INAPP) return; try{ if(sessionStorage.getItem("kc-iax")) return; }catch(e){}
+  const and=/Android/i.test(navigator.userAgent), url=location.href.split("#")[0];
+  const d=document.createElement("div"); d.className="inapp";
+  d.innerHTML=`<b>${INAPP} 앱 안에서 열렸어여</b><br>여기선 위치를 매번 물어봐여. ${and?"크롬으로 열면 한 번만 허용하면 돼여.":"메뉴(⋯)에서 <b>‘Safari로 열기’</b>를 눌러여."}<div class="ia">${and?`<a href="intent://${location.host}${location.pathname}${location.search}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(url)};end">크롬으로 열기</a>`:""}<button type="button" class="iacopy">주소 복사</button><button type="button" class="x">닫기</button></div>`;
+  document.body.prepend(d);
+  d.querySelector(".x").addEventListener("click",()=>{ d.remove(); try{ sessionStorage.setItem("kc-iax","1"); }catch(e){} });
+  d.querySelector(".iacopy").addEventListener("click",ev=>{ const b=ev.target; const done=()=>{ b.textContent="복사됐어여 ✓"; };
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done,()=>prompt("주소를 길게 눌러 복사하세여",url)); else prompt("주소를 길게 눌러 복사하세여",url); });
+})();
+$("addrtog").addEventListener("click",()=>{ const f=$("addrform"); f.hidden=!f.hidden; if(!f.hidden) $("addr").focus(); });
+document.addEventListener("click",e=>{
+  if(e.target.closest("a,input,select,summary,details,label,button:not(.foldbtn)")) return;
+  const li=e.target.closest("li.it.fold"); if(li){ const o=li.classList.toggle("open"); const fb=li.querySelector(".foldbtn"); if(fb) fb.textContent=o?"접기 ▴":"자세히 ▾"; return; }
+  const ni=e.target.closest(".ncard .nitem"); if(ni&&ni.querySelector(".na")) ni.classList.toggle("open");
+});
 function render(){
   if(st.sec==="near"||st.sec==="bus"){ renderNear(); return; }
   if(st.sec==="events"){ renderEvents(); return; }
   const fuel = st.menu==="fuel";
   let rows = R.filter(r=> nbOk(r) && inSection(r) && (st.q ? true : inMenu(r,st.menu)) && (st.sub==null || r.c===st.sub) && (!st.q || r.s.includes(st.q)));
   if(fuel && !st.q) rows = rows.filter(r=>r.g && r.g[st.fuel]!=null && (!st.memOnly || !r.gasNM));
+  if(st.cardOnly && !$("cardwrap").hidden) rows = rows.filter(r=>r.mem);
   if(st.sec==="life"&&st.menu==="sports"&&!st.q&&!st.simpleSp&&(st.sub==null||!/간이운동장/.test(D.cats[st.sub]||""))) rows=rows.filter(r=>!r.sport.simple);
   if(st.sec==="life"&&st.menu==="toilet"&&!st.q){ if(st.diaper) rows=rows.filter(r=>r.toilet.feat.some(f=>/기저귀/.test(f))); if(st.t24) rows=rows.filter(r=>r.toilet.open==="상시"); }
   if(st.sec==="life"&&st.menu==="ev"&&!st.q){ loadEV(); if(st.evFree) rows=rows.filter(r=>{const v=evNow(r); return v&&v[0]>0;}); }
@@ -1091,7 +1158,7 @@ function render(){
     const li=document.createElement("li"); li.className="it"+(r.good&&st.sec!=="good"?" good":"");
     const q=encodeURIComponent(r.kn||r.n);
     const info = r.k ? `<a class="main" href="https://place.map.kakao.com/${r.k}" target="_blank" rel="noopener">${r.office?"장소 정보":"가게 정보"}</a>` : "";
-    const route = r.lat!=null ? `<a href="https://map.kakao.com/link/to/${q},${r.lat},${r.lng}" target="_blank" rel="noopener">카카오 길찾기</a>` : "";
+    const route = r.lat!=null ? `<a class="route" href="https://map.kakao.com/link/to/${q},${r.lat},${r.lng}" target="_blank" rel="noopener">📍 길찾기</a>` : "";
     const naver = `<a href="https://map.naver.com/p/search/${encodeURIComponent((isNb(r)?rgOf(r):"김천")+" "+r.n)}" target="_blank" rel="noopener">네이버지도</a>`;
     let price="";
     if(r.g){const p=r.g[st.menu==="fuel"?st.fuel:1]; if(p!=null){ const f=st.menu==="fuel"?st.fuel:1, L=st.liters, ra=r.rg&&D.avgs&&D.avgs[r.rg]&&D.avgs[r.rg][f], av=ra||D.avg[f], avn=ra?r.rg:"김천", avgCost=Math.round(av*L), ep=effP(r,f), cardCost=Math.round(ep*L), gain=avgCost-cardCost;
@@ -1102,11 +1169,12 @@ function render(){
       ${gain>0?`<dt>이득으로 여기서 더 넣을 수 있는 양 (${won(gain)}원 ÷ ${r.gasNM?"":"실질 "}${won2(ep)}원)</dt><dd>${(gain/ep).toFixed(1)}L</dd>
       ${st.eff?`<dt>연비 ${st.eff}km/L 기준 더 갈 수 있는 거리</dt><dd>약 ${Math.round(gain/ep*st.eff)}km</dd>`:""}`:""}</dl>`;}}
     li.innerHTML = `
-      <div class="nm"><span class="t"></span>${minP!=null&&r.g&&effP(r,st.fuel)===minP?'<span class="tag">'+(st.memOnly?'최저가':'실질 최저')+'</span>':''}${r.gasNM?'<span class="tag loc">김천사랑카드 가맹 아님</span>':''}${brandOf(r)?`<span class="tag fbrand b-${esc(brandCode(r))}">${esc(brandOf(r))}</span>`:''}${r.ev?evTag(r):''}${r.ev?(r.ev.fast?`<span class="tag tf">급속 ${r.ev.fast}기${r.ev.max?" · 최대 "+r.ev.max+"kW":""}</span>`:"")+(r.ev.slow?`<span class="tag tf">완속 ${r.ev.slow}기</span>`:"")+(r.ev.lim?'<span class="tag loc">이용 제한</span>':'')+(r.ev.pf?'<span class="tag tf">주차 무료</span>':''):''}${r.shelter?`<span class="tag tf">${esc(r.shelter.ud)}</span><span class="tag tf">면적 ${won(r.shelter.area)}㎡</span>`:''}${r.toilet?`<span class="tag op">${esc(r.toilet.open==="상시"?"상시 개방":r.toilet.open)}</span>`+r.toilet.feat.map(f=>`<span class="tag tf">${esc(f)}</span>`).join(""):''}${r.pharm?`<span class="tag ${r.ps&&r.ps.open?"op":"cl"}">${r.ps?esc(r.ps.text):""}</span>`:''}${r.pharm&&PUBNIGHT[r.n]?'<span class="tag pn">공공심야약국</span>':r.pharm&&pharmLate(r,dayIdx(new Date()))?'<span class="tag tf">야간 영업</span>':''}${r.pharm&&pharmHol(r)?`<span class="tag tf">${pharmSun(r)&&pharmHolOpen(r)?"일·공휴일 영업":pharmSun(r)?"일요일 영업":"공휴일 영업"}</span>`:''}${r.aed?`<span class="tag tf">${esc(r.aed.place||"설치 위치 정보 없음")}</span>`:''}${r.sport?`<span class="tag tf">${esc(r.sport.ty)}</span>`:''}${r.wifi?`<span class="tag tf">${esc(r.wifi.prov)}${r.wifi.cnt>1?" · "+r.wifi.cnt+"대":""}</span>`:''}${(r.office||r.hos||r.kio||r.aed)&&r.ps?`<span class="tag ${r.ps.open?"op":"cl"}">${esc(r.ps.text)}</span>`:''}${r.hos&&r.hos.er?'<span class="tag er">응급실</span>':''}${isNb(r)?`<span class="tag rg">${esc(rgOf(r))}</span>`:''}${r.kid&&r.kid.moon?`<span class="tag moon">${esc(moonTag(r))}</span>`:''}${r.erx?erTags(r):''}${r.kio&&r.kio.fam?'<span class="tag tf">가족관계증명 발급</span>':''}${r.rest?(r.rest.cap?`<span class="tag tf">이용 ${r.rest.cap}명</span>`:'')+r.rest.fl.map(f=>`<span class="tag op">${esc(f)}</span>`).join(''):''}${r.park2?(r.park2.kind.includes('무료')?'<span class="tag op">무료</span>':r.park2.kind.includes('유료')?'<span class="tag cl">유료</span>':'')+(r.park2.typ?`<span class="tag tf">${esc(r.park2.typ)}</span>`:'')+(r.park2.cap?`<span class="tag tf">${r.park2.cap}면</span>`:''):''}${r.repair&&r.repair.member?'<span class="tag">김천사랑카드 가맹</span>':''}${r.park?`<span class="tag tf">면적 ${won(r.park.ar)}㎡</span>`:''}${r.pharm&&r.pharm.member?'<span class="tag">김천사랑카드 가맹</span>':''}${r.her?`<span class="tag hk">${esc(r.her.kind)}</span>`:''}${r.her&&r.her.intangible?'<span class="tag loc">무형유산 · 장소 없음</span>':''}${r.good&&st.sec!=="good"?'<span class="tag gp">착한가격업소</span>':''}${r.good&&st.sec==="good"&&!r.nonMember?'<span class="tag">김천사랑카드 가맹점</span>':''}${r.nonMember?'<span class="tag loc">김천사랑카드 가맹점 아님</span>':''}${r.m===3?'<span class="tag loc">주소 위치</span>':''}${r.m===0&&!(r.her&&r.her.intangible)?'<span class="tag loc">위치 없음</span>':''}</div>
+      <div class="nm"><span class="t"></span>${minP!=null&&r.g&&effP(r,st.fuel)===minP?'<span class="tag">'+(st.memOnly?'최저가':'실질 최저')+'</span>':''}${r.gasNM?'<span class="tag loc">김천사랑카드 가맹 아님</span>':''}${brandOf(r)?`<span class="tag fbrand b-${esc(brandCode(r))}">${esc(brandOf(r))}</span>`:''}${r.ev?evTag(r):''}${r.ev?(r.ev.fast?`<span class="tag tf">급속 ${r.ev.fast}기${r.ev.max?" · 최대 "+r.ev.max+"kW":""}</span>`:"")+(r.ev.slow?`<span class="tag tf">완속 ${r.ev.slow}기</span>`:"")+(r.ev.lim?'<span class="tag loc">이용 제한</span>':'')+(r.ev.pf?'<span class="tag tf">주차 무료</span>':''):''}${r.shelter?`<span class="tag tf">${esc(r.shelter.ud)}</span><span class="tag tf">면적 ${won(r.shelter.area)}㎡</span>`:''}${r.toilet?`<span class="tag op">${esc(r.toilet.open==="상시"?"상시 개방":r.toilet.open)}</span>`+r.toilet.feat.map(f=>`<span class="tag tf">${esc(f)}</span>`).join(""):''}${r.pharm?`<span class="tag ${r.ps&&r.ps.open?"op":"cl"}">${r.ps?esc(r.ps.text):""}</span>`:''}${r.pharm&&PUBNIGHT[r.n]?'<span class="tag pn">공공심야약국</span>':r.pharm&&pharmLate(r,dayIdx(new Date()))?'<span class="tag tf">야간 영업</span>':''}${r.pharm&&pharmHol(r)?`<span class="tag tf">${pharmSun(r)&&pharmHolOpen(r)?"일·공휴일 영업":pharmSun(r)?"일요일 영업":"공휴일 영업"}</span>`:''}${r.aed?`<span class="tag tf">${esc(r.aed.place||"설치 위치 정보 없음")}</span>`:''}${r.sport?`<span class="tag tf">${esc(r.sport.ty)}</span>`:''}${r.wifi?`<span class="tag tf">${esc(r.wifi.prov)}${r.wifi.cnt>1?" · "+r.wifi.cnt+"대":""}</span>`:''}${(r.office||r.hos||r.kio||r.aed)&&r.ps?`<span class="tag ${r.ps.open?"op":"cl"}">${esc(r.ps.text)}</span>`:''}${r.hos&&r.hos.er?'<span class="tag er">응급실</span>':''}${isNb(r)?`<span class="tag rg">${esc(rgOf(r))}</span>`:''}${r.kid&&r.kid.moon?`<span class="tag moon">${esc(moonTag(r))}</span>`:''}${r.erx?erTags(r):''}${r.kio&&r.kio.fam?'<span class="tag tf">가족관계증명 발급</span>':''}${r.rest?(r.rest.cap?`<span class="tag tf">이용 ${r.rest.cap}명</span>`:'')+r.rest.fl.map(f=>`<span class="tag op">${esc(f)}</span>`).join(''):''}${r.park2?(r.park2.kind.includes('무료')?'<span class="tag op">무료</span>':r.park2.kind.includes('유료')?'<span class="tag cl">유료</span>':'')+(r.park2.typ?`<span class="tag tf">${esc(r.park2.typ)}</span>`:'')+(r.park2.cap?`<span class="tag tf">${r.park2.cap}면</span>`:''):''}${r.park?`<span class="tag tf">면적 ${won(r.park.ar)}㎡</span>`:''}${r.mem?'<span class="tag mem">💳 김천사랑카드</span>':''}${r.her?`<span class="tag hk">${esc(r.her.kind)}</span>`:''}${r.her&&r.her.intangible?'<span class="tag loc">무형유산 · 장소 없음</span>':''}${r.good&&st.sec!=="good"?'<span class="tag gp">착한가격업소</span>':''}${r.good&&st.sec==="good"&&!r.nonMember?'<span class="tag">김천사랑카드 가맹점</span>':''}${r.nonMember?'<span class="tag loc">김천사랑카드 가맹점 아님</span>':''}${r.m===3?'<span class="tag loc">주소 위치</span>':''}${r.m===0&&!(r.her&&r.her.intangible)?'<span class="tag loc">위치 없음</span>':''}</div>
       <div class="km">${r.d!=null?fmtKm(r.d):""}</div>
       <div class="ad"><div class="cat"></div><div class="a"></div>${r.kn?'<div class="alias"></div>':''}</div>
       ${price}
-      <div class="links">${info}${route}${naver}${r.her||r.shelter||r.kio||r.rest||(r.office&&!r.ph)?"":r.park?(r.ph?`<a class="call" href="${telHref(r.ph)}">관리부서 <span class="tel"></span></a>`:""):r.ev?(r.ph?`<a class="call" href="${telHref(r.ph)}">운영사 <span class="tel"></span></a>`:""):r.toilet?(r.ph?`<a class="call" href="${telHref(r.ph)}">관리기관 <span class="tel"></span></a>`:""):r.ph?`<a class="call" href="${telHref(r.ph)}">전화 <span class="tel"></span></a>`:`<a href="https://m.search.naver.com/search.naver?query=${encodeURIComponent((isNb(r)?rgOf(r):"김천")+" "+r.n+" 전화번호")}" target="_blank" rel="noopener">전화번호 찾기(네이버)</a>`}${r.lat!=null?'<button class="here" type="button">여기 기준</button>':''}<button class="act${isFav(r)?" on":""}" type="button" data-act="fav">${isFav(r)?"★ 단골":"☆ 단골"}</button><button class="act" type="button" data-act="share">📤 공유</button><button class="act" type="button" data-act="fix">✏️ 정보 틀림</button></div>`;
+      <div class="links">${info}${route}${naver}${r.her||r.shelter||r.kio||r.rest||(r.office&&!r.ph)?"":r.park?(r.ph?`<a class="call" href="${telHref(r.ph)}">관리부서 <span class="tel"></span></a>`:""):r.ev?(r.ph?`<a class="call" href="${telHref(r.ph)}">운영사 <span class="tel"></span></a>`:""):r.toilet?(r.ph?`<a class="call" href="${telHref(r.ph)}">관리기관 <span class="tel"></span></a>`:""):r.ph?`<a class="call" href="${telHref(r.ph)}">📞 전화 <span class="tel"></span></a>`:`<a href="https://m.search.naver.com/search.naver?query=${encodeURIComponent((isNb(r)?rgOf(r):"김천")+" "+r.n+" 전화번호")}" target="_blank" rel="noopener">전화번호 찾기(네이버)</a>`}${r.lat!=null?'<button class="here" type="button">여기 기준</button>':''}<button class="act${isFav(r)?" on":""}" type="button" data-act="fav">${isFav(r)?"★ 단골":"☆ 단골"}</button><button class="act" type="button" data-act="share">📤 공유</button><button class="act" type="button" data-act="fix">✏️ 정보 틀림</button><button class="foldbtn" type="button">자세히 ▾</button></div>`;
+    li.classList.add("fold"); if(r.erx||r.kid) li.classList.add("keeptags");
     li.querySelector(".t").textContent=r.n;
     li.querySelector(".cat").textContent=(r.e>=0?D.emds[r.e]+" · ":rgOf(r)?rgOf(r)+" · ":"")+D.cats[r.c].replace(/^(생활편의|관광|문화유산|관공서|병원|무인민원|공원|한파쉼터|무더위쉼터|정비소|주차장|아이|안전|생활|와이파이|체육시설)\//,"")+(r.hos&&r.kid?" · "+r.hos.div:"")+(r.her&&r.her.era?" · "+r.her.era:"");
     if(r.ev){ const d=document.createElement("div"); d.className="alias"; d.textContent=`${r.ev.busi} · ${r.ev.time||"이용시간 정보 없음"}`+(r.ev.lim?` · ${r.ev.lim}`:""); li.querySelector(".ad").append(d); }
@@ -1147,7 +1215,9 @@ function render(){
 const sm=load("kc-menu"); if(sm && (sm==="good"||D.menus.some(m=>m[0]===sm))){ st.cardMenu=sm; }
 { const lm=load("kc-lmenu"); if(LIFE_MENUS.some(m=>m[0]===lm)) st.lifeMenu=lm; const hm=load("kc-hmenu"); if(HER_MENUS.some(m=>m[0]===hm)) st.herMenu=hm; }
 const ss=load("kc-sec"); if(ss==="good"){ st.sec="card"; st.menu=st.cardMenu="good"; } else if(ss && SECS[ss]){ st.sec=ss; st.menu= ss==="card" ? st.cardMenu : ss==="life" ? (st.lifeMenu||"pharm") : ss==="her" ? (st.herMenu||"heritage") : SECS[ss].menu; }
-const sb=load("kc-base"); if(sb&&sb.startsWith("n:")&&NB[sb.slice(2)]){ sel.value=sb; const c=NB[sb.slice(2)].c; st.base={lat:c[0],lng:c[1]}; $("status").textContent=`${sb.slice(2)}${NB[sb.slice(2)].dg?" 구청 부근":" 시내"} 기준 직선거리입니다.`; } else if(sb==="gps"){ setTimeout(()=>$("gps").click(),300); } else if(sb && sb.startsWith("e:") && D.cen[sb.slice(2)]){sel.value=sb; const c=D.cen[sb.slice(2)]; st.base={lat:c[0],lng:c[1]}; $("status").textContent=`${sb.slice(2)} 중심 기준 직선거리입니다.`;}
+const sb=load("kc-base"); if(sb&&sb.startsWith("n:")&&NB[sb.slice(2)]){ sel.value=sb; const c=NB[sb.slice(2)].c; st.base={lat:c[0],lng:c[1]}; $("status").textContent=`${sb.slice(2)}${NB[sb.slice(2)].dg?" 구청 부근":" 시내"} 기준 직선거리입니다.`; } else if(sb==="gps"){ let lp=null; try{ lp=JSON.parse(load("kc-lastpos")||"null"); }catch(e){}
+  if(INAPP&&lp){ oG.hidden=false; sel.value="gps"; st.base={lat:lp.lat,lng:lp.lng}; $("status").textContent="지난번 내 위치로 보여드려여 · 새로 찾으려면 ‘내 위치’"; }
+  else setTimeout(()=>$("gps").click(),300); } else if(sb && sb.startsWith("e:") && D.cen[sb.slice(2)]){sel.value=sb; const c=D.cen[sb.slice(2)]; st.base={lat:c[0],lng:c[1]}; $("status").textContent=`${sb.slice(2)} 중심 기준 직선거리입니다.`;}
 else $("status").textContent="‘내 위치’를 누르거나 읍면동을 골라주세요.";
 sync(); render(); loadNB();
 
