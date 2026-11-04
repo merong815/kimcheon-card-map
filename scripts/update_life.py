@@ -518,6 +518,117 @@ def parking(cx):
     return off + keep
 
 
+# ---------- 자동심장충격기(AED)·동물병원·무료 와이파이·공공체육시설 ----------
+
+def _hm(v):
+    v = (v or "").strip()
+    return v.zfill(4) if v.isdigit() else ""
+
+
+def aed(cx):
+    """국립중앙의료원 전국 자동심장충격기(AED) — 설치 건물이 열려 있는 시간에만 쓸 수 있음."""
+    out = []
+    for page in range(1, 11):
+        url = (f"https://apis.data.go.kr/B552657/AEDInfoInqireService/getEgytAedManageInfoInqire"
+               f"?serviceKey={q(KEY)}&Q0={q(cx.sido)}&Q1={q(cx.si)}&pageNo={page}&numOfRows=500")
+        its = items_xml(get(url, as_json=False))
+        for it in its:
+            lat, lng = float(it.get("wgs84Lat") or 0), float(it.get("wgs84Lon") or 0)
+            if not lat:
+                continue
+            hrs = []
+            for d in ("mon", "tue", "wed", "thu", "fri", "sat", "sun", "hol"):
+                s, e = _hm(it.get(d + "SttTme")), _hm(it.get(d + "EndTme"))
+                hrs.append(f"{s}-{e}" if s and e and s != e else "")
+            a = cx.strip(it.get("buildAddress", ""))
+            out.append([it.get("org", "").strip(), it.get("buildPlace", "").strip(), a, tel(it.get("clerkTel")),
+                        round(lat, 6), round(lng, 6), "|".join(hrs), cx.emd(lat, lng, a)])
+        if len(its) < 500:
+            break
+    return out
+
+
+def vet(cx):
+    """동물병원(행정안전부 지방행정인허가). 영업 중인 곳만. 위치는 주소로 카카오에서 찾음(기존 자료 재사용)."""
+    old = {(o[0], o[1]): o for o in cx.D.get("vet", [])}
+    out = []
+    for page in range(1, 6):
+        url = (f"https://apis.data.go.kr/1741000/animal_hospitals/info?serviceKey={q(KEY)}&returnType=json"
+               f"&pageNo={page}&numOfRows=100&cond%5BOPN_ATMY_GRP_CD%3A%3AEQ%5D={cx.gc}")
+        j = get(url)
+        its = ((j["response"]["body"].get("items") or {}).get("item")) or []
+        for x in its:
+            if x.get("SALS_STTS_CD") != "01":
+                continue
+            n = (x.get("BPLC_NM") or "").strip()
+            full = (x.get("ROAD_NM_ADDR") or x.get("LOTNO_ADDR") or "").strip()
+            a = cx.strip(full)
+            o = old.get((n, a))
+            g = (o[3], o[4]) if o else kakao_geo(full)
+            if not g:
+                continue
+            out.append([n, a, tel(x.get("TELNO")), round(g[0], 6), round(g[1], 6), cx.emd(g[0], g[1], a)])
+        if len(its) < 100:
+            break
+    return out
+
+
+def wifi(cx):
+    """공공 무료 와이파이(행정안전부). 같은 장소의 여러 기기는 한 곳으로 묶음."""
+    got = {}
+    for page in range(1, 21):
+        url = (f"https://apis.data.go.kr/1741000/free_wifi_info/info?serviceKey={q(KEY)}&returnType=json"
+               f"&pageNo={page}&numOfRows=100&cond%5BOPN_ATMY_GRP_CD%3A%3AEQ%5D={cx.gc}")
+        j = get(url)
+        its = ((j["response"]["body"].get("items") or {}).get("item")) or []
+        for x in its:
+            lat, lng = float(x.get("WGS84_LAT") or 0), float(x.get("WGS84_LOT") or 0)
+            if not lat:
+                continue
+            n = re.sub(r"(_?CCTV.*|_?#\d+|\s*\((옥외|옥내|실외|실내)\d*\))+$", "", (x.get("INSTL_PLC_NM") or "").strip()).strip() or (x.get("INSTL_PLC_NM") or "").strip()
+            key = (n, round(lat, 4), round(lng, 4))
+            if key in got:
+                got[key][6] += 1
+                continue
+            a = cx.strip(x.get("LCTN_ROAD_NM_ADDR") or x.get("LCTN_LOTNO_ADDR") or "")
+            got[key] = [n, a, (x.get("INSTL_PLC_DTL") or "").strip(), x.get("SRVC_PROV_NM", ""), round(lat, 6), round(lng, 6), 1,
+                        x.get("INSTL_FCLT_SE_NM", ""), cx.emd(lat, lng, a)]
+        if len(its) < 100:
+            break
+    return list(got.values())
+
+
+def sports(cx):
+    """공공체육시설(국민체육진흥공단 전국체육시설). 공공·정상운영만.
+    '간이운동장'(마을 운동기구·쉼터)은 따로 표시하고, 위치 없는 간이운동장은 뺌."""
+    old = {(o[0], o[2]): o for o in cx.D.get("sports", [])}
+    out = []
+    for page in range(1, 11):
+        url = (f"https://apis.data.go.kr/B551014/SRVC_API_SFMS_FACI/TODZ_API_SFMS_FACI?serviceKey={q(KEY)}"
+               f"&pageNo={page}&numOfRows=500&resultType=json&cp_nm={q(cx.sido)}&cpb_nm={q(cx.si)}")
+        j = get(url)
+        its = ((j["response"]["body"].get("items") or {}).get("item")) or []
+        for x in its:
+            if x.get("faci_gb_nm") != "공공" or x.get("faci_stat_nm") != "정상운영":
+                continue
+            n, ty = (x.get("faci_nm") or "").strip(), (x.get("ftype_nm") or "기타시설").strip()
+            simple = ty == "간이운동장"
+            full = (x.get("faci_road_addr") or x.get("faci_addr") or "").strip()
+            a = cx.strip(re.sub(r"^경북\s", "경상북도 ", full))
+            lat, lng = float(x.get("faci_lat") or 0), float(x.get("faci_lot") or 0)
+            if not lat:
+                o = old.get((n, a))
+                g = (o[4], o[5]) if o else (None if simple else kakao_geo(full))
+                if not g:
+                    continue
+                lat, lng = g
+            out.append([n, ty, a, tel(x.get("faci_tel_no") or x.get("faci_mng_user_telno")), round(lat, 6), round(lng, 6),
+                        1 if simple else 0, cx.emd(lat, lng, a)])
+        if len(its) < 500:
+            break
+    return out
+
+
 def toilet(cx):
     """공중화장실(행정안전부 공중화장실정보 조회서비스). 김천은 보름에 한 번, 이웃 시군은 매일.
     2025년 2월부터 원자료에서 위도·경도가 빠져서, 주소를 카카오로 좌표로 바꿈.
@@ -600,7 +711,8 @@ def neighbors():
     """구미·상주·칠곡·성주 + 대구 9개 구·군 생활정보 → nb/<slug>.json (앱이 필요할 때만 불러옴)"""
     os.makedirs("nb", exist_ok=True)
     jobs = [("pharm", pharm), ("hosp", hosp), ("kiosk", kiosk), ("park", park), ("shelter", shelter), ("ev", ev),
-            ("repair", repair), ("parking", parking), ("toilet", toilet)]
+            ("repair", repair), ("parking", parking), ("toilet", toilet),
+            ("aed", aed), ("vet", vet), ("wifi", wifi), ("sports", sports)]
     if COLD_KEY:
         jobs.append(("cold", cold))
     if HEAT_KEY:
@@ -631,15 +743,20 @@ def main():
         sys.exit("index.html에서 데이터(const D)를 찾지 못했습니다.")
     D = json.loads(m.group(1))
     cx = Ctx(D)
-    jobs = [("pharm", pharm), ("hosp", hosp), ("kiosk", kiosk), ("park", park), ("shelter", shelter), ("ev", ev), ("repair", repair), ("parking", parking), ("kid", kid), ("er", er)]
+    jobs = [("pharm", pharm), ("hosp", hosp), ("kiosk", kiosk), ("park", park), ("shelter", shelter), ("ev", ev), ("repair", repair), ("parking", parking), ("kid", kid), ("er", er),
+            ("aed", aed), ("vet", vet), ("wifi", wifi), ("sports", sports)]
     if COLD_KEY:
         jobs.append(("cold", cold))
     if HEAT_KEY:
         jobs.append(("heat", heat))
     # 김천 공중화장실: 1년에 몇 곳 느는 정도라 보름에 한 번만
     today = datetime.now(KST)
-    ta = D.get("toiletAsof", "")
-    if not ta or (today - datetime.strptime(ta, "%Y%m%d").replace(tzinfo=KST)).days >= 15:
+    ta = re.sub(r"\D", "", str(D.get("toiletAsof", "")))[:8]
+    try:
+        old_t = datetime.strptime(ta, "%Y%m%d").replace(tzinfo=KST)
+    except ValueError:
+        old_t = None
+    if not old_t or (today - old_t).days >= 15:
         jobs.append(("toilet", toilet))
     ok = set()
     changed = run_jobs(D, cx, jobs, ok=ok)
