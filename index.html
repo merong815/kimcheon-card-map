@@ -289,8 +289,8 @@ li.it.good{border-color:var(--good);background:linear-gradient(90deg,var(--good-
 .secs{justify-content:space-between;gap:2px 6px}
 body.big .secs{zoom:.8333}
 @media (min-width:720px){.secs{justify-content:flex-start;gap:2px 28px}}
-.sec{font-family:var(--f-display);font-size:clamp(13px,calc((100vw - 68px) / 18.3),23px);font-weight:700;line-height:1.3;background:none;border:0;padding:2px 0 5px;color:color-mix(in srgb,var(--board-ink) 55%,transparent);border-bottom:3px solid transparent;cursor:pointer}
-.sec[aria-selected="true"]{color:var(--board-ink);border-bottom-color:var(--digit)}
+.sec{font-family:var(--f-body);font-size:clamp(13px,calc((100vw - 68px) / 18.9),23px);font-weight:400;letter-spacing:-.01em;line-height:1.3;background:none;border:0;padding:2px 0 5px;color:color-mix(in srgb,var(--board-ink) 55%,transparent);border-bottom:3px solid transparent;cursor:pointer}
+.sec[aria-selected="true"]{color:var(--board-ink);font-weight:500;border-bottom-color:var(--digit)}
 .sec:focus-visible{outline:2px solid var(--digit);outline-offset:2px}
 .viewbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 #mapwrap{position:relative}
@@ -1073,6 +1073,16 @@ function render(){
     sum=`<div class="sos kidsos"><b>🚨 아이가 숨쉬기 힘들어하거나, 축 처져 잘 안 깨거나, 경련이 멈추지 않으면 기다리지 말고 <a href="tel:119">☎ 119</a></b><br>어디로 가야 할지 모르겠으면 119에 전화해도 병원 안내·응급처치 상담을 받을 수 있어여.<br>📞 <b style="font-size:14px">출발 전에 꼭 전화</b>해서 지금 소아 진료되는지 물어보세여. 응급실도 소아 전문의가 없을 때가 있어여.<br><small>병상 숫자 = 남은 병상/전체 · 국립중앙의료원 실시간 자료${up?" ("+up+")":""} · 김천과 위에서 고른 이웃 지역(구미·상주·칠곡·성주·대구)을 가까운 순으로 보여여</small></div>`+sum; }
   if(st.menu==="ev"&&!st.q) sum=`<span>${EVS&&EVS.s?`🔌 충전기 상태: ${esc(EVS.updated.slice(11,16))} 기준(30분마다, 김천만 · 이웃 시군은 상태 정보 없음)`:EVS&&EVS.stale?"🔌 충전기 상태 자료가 오래돼 숨겼어여":"🔌 충전기 상태 불러오는 중…"}</span> · `+sum;
   if(st.menu==="repair"&&!st.q) sum=`<div class="sos"><b>차 섰나? 놀라지 말고 이 순서로!</b><br>① 안전한 곳으로 피하고 비상등·삼각대<br>② <b style="font-size:14px">가입한 자동차보험 긴급출동</b>(24시간, 보험증권·보험사 앱에 번호 있음)<br>③ 고속도로라면 한국도로공사 긴급견인 <a href="tel:15882504">☎ 1588-2504</a> — 승용차·1.4톤 이하, 가까운 휴게소·영업소까지 무료(연 2회)<br>④ 그다음 가까운 정비소 ↓ (밤·주말엔 대부분 문 닫아요)</div>`+sum;
+  if(st.sec==="life"&&!st.q&&st.nbSel.size){
+    const miss=[...st.nbSel].filter(g=>{ const fs=Object.keys(NB).filter(rg=>nbGroup(rg)===g&&nbLoaded[rg]); return fs.length&&fs.every(rg=>nbLoaded[rg]==="none"); });
+    const cnt={}; rows.forEach(r=>{ const g=isNb(r)?nbGroup(rgOf(r)):"김천"; cnt[g]=(cnt[g]||0)+1; });
+    const parts=["김천",...NB_GROUPS.filter(g=>st.nbSel.has(g))].map(g=>`${g} ${won(cnt[g]||0)}`);
+    if(rows.length&&parts.length>1) sum+=` <small class="rgcnt">(${parts.join(" · ")})</small>`;
+    if(miss.length) sum+=`<br><small class="nbmiss">⚠️ ${miss.join("·")} 자료는 아직 준비 중이라 김천만 보여여. 곧 채워져여.</small>`;
+    const none=[...st.nbSel].filter(g=>g!=="대구"&&!miss.includes(g)&&!cnt[g]&&Object.keys(NB).some(rg=>nbGroup(rg)===g&&nbLoaded[rg]==="ok"));
+    if(rows.length&&none.length) sum+=`<br><small class="nbmiss">${none.join("·")}는 이 항목 공공데이터가 아직 없어여.</small>`;
+    else if(st.nbSel.has("대구")&&!Object.keys(NB).some(rg=>NB[rg].dg&&nbLoaded[rg])) sum+=`<br><small class="nbmiss">대구는 기준 위치가 대구 가까이 있을 때만 불러와여.</small>`;
+  }
   $("summary").innerHTML = sum;
   const list=$("list"); list.textContent="";
   if(!rows.length){list.innerHTML='<li class="empty">'+mascot("tilt",90)+'<br>찾는 데가 없어여 🤔 조건을 바꿔 보세여.</li>'; $("more").hidden=true; return;}
