@@ -479,7 +479,7 @@ body.compact .ctlopen{display:inline-block;position:absolute;right:12px;top:6px;
     <p>비가맹 주유소: 오피넷에 등록된 김천시와 이웃 시군(구미·상주·칠곡·성주) 주유소 중 김천사랑카드 가맹점이 아닌 곳(하루 2번 자동 갱신, 오피넷 무료 호출 한도 때문에 이웃 시군 일부는 직전 가격일 수 있음 — 가격 옆 날짜 확인). ‘김천사랑카드 가맹점만’ 체크를 끄면 함께 보입니다. 비가맹점은 카드 10% 적립이 없어 실제 결제가 그대로 비용입니다.</p>
     <p>공중화장실: 공공데이터포털 전국공중화장실표준데이터(김천시 등록분, 데이터 기준일 2025.6.30). 개방화장실은 민간·공공 건물의 화장실을 개방한 곳입니다.</p>
     <p>아이랑 갈 데: 키즈카페·실내 놀이시설은 행정안전부 전국어린이놀이시설정보(놀이제공영업소, 운영 중인 곳, 김천·구미·칠곡·상주·성주·대구), 체험학습장·박물관·도서관·캠핑장 등은 카카오 장소 정보(김천), 공원은 도시공원 자료입니다. 매일 자동 갱신되며 운영 여부·이용 연령은 가기 전에 확인하세요.</p>
-    <p>영화관: 김천사랑카드 가맹점 목록·카카오 장소 정보. 상영시간표는 공개된 자료가 없어 ‘🎬 상영시간표’를 누르면 구글 검색의 그 극장 상영시간표로, ‘자세히’ 안의 ‘네이버 지도 예매’는 네이버 지도 극장 화면으로 연결됩니다.</p>
+    <p>영화관: 김천사랑카드 가맹점 목록·카카오 장소 정보. 상영시간표는 공개된 자료가 없어 ‘🎬 상영시간표’를 누르면 휴대폰에선 네이버 장소의 영화(시간표·예매) 화면, 컴퓨터에선 구글 검색의 그 극장 상영시간표로 연결됩니다.</p>
     <p>전국 축제: 한국관광공사 TourAPI 행사정보(매일 자동 갱신, 사진 출처 한국관광공사). 일정은 주최 측 사정으로 바뀔 수 있습니다.</p>
     <p id="lifeasof"></p>
     
@@ -634,8 +634,8 @@ if(rg) for(let i=start;i<R.length;i++){ R[i].rg=rg; R[i].e=-1; }
 }
 // 영화관(상영시간표 = 네이버 지도 '영화' 탭 링크, 만든 사람이 직접 확인한 주소)
 const MOVIES=[
-  {n:"CGV 김천율곡",re:/CGV/i,a:"경북 김천시 혁신2로 15 더스퀘어 (율곡동)",lat:36.11488,lng:128.18342,alias:"cgv 더스퀘어",url:"https://map.naver.com/p/search/CGV%20%EA%B9%80%EC%B2%9C/place/38712526?placePath=%2Fhome%3Fbk_query%3DCGV%20%EA%B9%80%EC%B2%9C%26entry%3D%26fromNxList%3Dtrue%26from%3Dmap%26fromPanelNum%3D2%26timestamp%3D202611052041%26locale%3Dko%26svcName%3Dmap_pcv5%26searchText%3DCGV%20%EA%B9%80%EC%B2%9C&from=nx&fromNxList=true&searchType=place&c=15.00,0,0,0,dh"},
-  {n:"메가박스 김천",re:/메가박스|시네마김천/,a:"경북 김천시 김천로 74 4층 (평화동,한일빌딩)",alias:"시네마김천 megabox",url:"https://map.naver.com/p/search/%EB%A9%94%EA%B0%80%EB%B0%95%EC%8A%A4%20%EA%B9%80%EC%B2%9C?c=15.00,0,0,0,dh&placePath=%2Fmovie%3FfromPanelNum%3D1%26additionalHeight%3D76%26timestamp%3D202611052041%26locale%3Dko%26svcName%3Dmap_pcv5%26searchText%3D%EB%A9%94%EA%B0%80%EB%B0%95%EC%8A%A4%20%EA%B9%80%EC%B2%9C"}];
+  {n:"CGV 김천율곡",pid:"38712526",re:/CGV/i,a:"경북 김천시 혁신2로 15 더스퀘어 (율곡동)",lat:36.11488,lng:128.18342,alias:"cgv 더스퀘어",url:"https://map.naver.com/p/search/CGV%20%EA%B9%80%EC%B2%9C/place/38712526?placePath=%2Fhome%3Fbk_query%3DCGV%20%EA%B9%80%EC%B2%9C%26entry%3D%26fromNxList%3Dtrue%26from%3Dmap%26fromPanelNum%3D2%26timestamp%3D202611052041%26locale%3Dko%26svcName%3Dmap_pcv5%26searchText%3DCGV%20%EA%B9%80%EC%B2%9C&from=nx&fromNxList=true&searchType=place&c=15.00,0,0,0,dh"},
+  {n:"메가박스 김천",pid:"37162753",re:/메가박스|시네마김천/,a:"경북 김천시 김천로 74 4층 (평화동,한일빌딩)",alias:"시네마김천 megabox",url:"https://map.naver.com/p/search/%EB%A9%94%EA%B0%80%EB%B0%95%EC%8A%A4%20%EA%B9%80%EC%B2%9C?c=15.00,0,0,0,dh&placePath=%2Fmovie%3FfromPanelNum%3D1%26additionalHeight%3D76%26timestamp%3D202611052041%26locale%3Dko%26svcName%3Dmap_pcv5%26searchText%3D%EB%A9%94%EA%B0%80%EB%B0%95%EC%8A%A4%20%EA%B9%80%EC%B2%9C"}];
 buildLife(D,null);
 // ---------- 아이랑 갈 데: 키즈카페·놀이시설(행정안전부 어린이놀이시설) + 체험·박물관·도서관·캠핑(카카오 장소) + 어린이공원 ----------
 { const kc=sub=>{ const lab="아이랑/"+sub; let ci=D.cats.indexOf(lab); if(ci<0){ D.cats.push(lab); D.catMenu.push("kids"); ci=D.cats.length-1; } return ci; };
@@ -644,7 +644,7 @@ buildLife(D,null);
     // 김천 영화관은 두 곳(시네마김천 = 메가박스 김천 같은 곳). 순서·이름·상영시간표 링크는 고정, 위치는 자료에서 찾아 채움
     const src=D.movie||[];
     MOVIES.forEach((mv,i)=>{ const x=src.find(s=>mv.re.test(s[0])&&s[2]!=null)||[mv.n,mv.a,mv.lat??null,mv.lng??null,"",""];
-      R.push({n:mv.n,a:x[1]||mv.a,c:ci,e:-1,m:x[2]!=null?1:0,lat:x[2],lng:x[3],k:x[5]||"",kn:"",ph:x[4]||mv.ph||"",menu:"movie",g:null,movie:{ord:i,url:mv.url},s:(mv.n+" "+(x[1]||mv.a)+" 영화관 영화 극장 "+mv.alias).toLowerCase()}); }); }
+      R.push({n:mv.n,a:x[1]||mv.a,c:ci,e:-1,m:x[2]!=null?1:0,lat:x[2],lng:x[3],k:x[5]||"",kn:"",ph:x[4]||mv.ph||"",menu:"movie",g:null,movie:{ord:i,url:mv.url,pid:mv.pid},s:(mv.n+" "+(x[1]||mv.a)+" 영화관 영화 극장 "+mv.alias).toLowerCase()}); }); }
   R.filter(r=>r.park&&/어린이공원|근린공원|수변공원/.test(D.cats[r.c])&&!r.rg).forEach(r=>R.push(Object.assign({},r,{c:kc("공원·놀이터"),menu:"kids",kidp:{sub:"공원·놀이터"},park:r.park})));
 }
 // ---------- 아이 아플 때: 소아청소년과·달빛어린이병원·응급실 (김천 + 구미·칠곡·상주·성주·영동 + 대구) ----------
@@ -761,8 +761,10 @@ const rgOf=r=>r.rg||(r.kid&&r.kid.rg)||"";
 // ---------- 김천사랑카드 가맹 여부: 병원·치과·약국·정비소·동물병원·관광지 등을 가맹점 목록과 이름+위치로 맞춰 봄 ----------
 const MEM_MENUS=["pharm","hosp","dent","kid","repair","vet","movie"];
 // 영화관 상영시간표: 네이버 지도 장소(‘예매’ 탭에 시간표) 공유 링크. 없는 극장은 네이버 검색으로
-// 🎬 상영시간표: 구글 검색 결과 맨 위에 극장 시간표가 바로 나옴(한 번에 보임). 네이버 지도(예매 탭)는 ‘자세히’ 안에
-const movieUrl=r=>"https://www.google.com/search?q="+encodeURIComponent(r.n);
+// 🎬 상영시간표: 휴대폰은 네이버 모바일 장소 '영화' 탭(시간표·예매가 바로 보임), PC는 구글 검색(결과 맨 위에 시간표)
+const IS_MOB=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+const googleMv=r=>"https://www.google.com/search?q="+encodeURIComponent(r.n);
+const movieUrl=r=>IS_MOB&&r.movie&&r.movie.pid ? `https://m.place.naver.com/place/${r.movie.pid}/movie` : googleMv(r);
 const memName=s=>String(s||"").replace(/\(.*?\)|주식회사|㈜|\s|[·.,\-]/g,"").toLowerCase();
 function markMembers(){ const idx={}, grid={}, gk=(a,b)=>Math.round(a*200)+":"+Math.round(b*200);
   for(let i=0;i<D.rows.length;i++){ const m=R[i]; if(m.lat==null) continue; const k=memName(m.n); m._mk=k; if(k.length>=2) (idx[k]||(idx[k]=[])).push(m); (grid[gk(m.lat,m.lng)]||(grid[gk(m.lat,m.lng)]=[])).push(m); }
@@ -1341,7 +1343,7 @@ function render(){
       <div class="km">${r.d!=null?fmtKm(r.d):""}</div>
       <div class="ad"><div class="cat"></div><div class="a"></div>${r.kn?'<div class="alias"></div>':''}</div>
       ${price}
-      <div class="links">${info}${route}${naver}${r.her||r.shelter||r.kio||r.rest||(r.office&&!r.ph)?"":r.park?(r.ph?`<a class="call" href="${telHref(r.ph)}">📞 <span class="cl">관리부서 </span><span class="tel"></span></a>`:""):r.ev?(r.ph?`<a class="call" href="${telHref(r.ph)}">📞 <span class="cl">운영사 </span><span class="tel"></span></a>`:""):r.toilet?(r.ph?`<a class="call" href="${telHref(r.ph)}">📞 <span class="cl">관리기관 </span><span class="tel"></span></a>`:""):r.ph?`<a class="call" href="${telHref(r.ph)}">📞 <span class="cl">전화 </span><span class="tel"></span></a>`:`<a href="https://m.search.naver.com/search.naver?query=${encodeURIComponent((isNb(r)?rgOf(r):"김천")+" "+r.n+" 전화번호")}" target="_blank" rel="noopener">전화번호 찾기(네이버)</a>`}${r.lat!=null?'<button class="here" type="button">여기 기준</button>':''}<button class="act${isFav(r)?" on":""}" type="button" data-act="fav">${isFav(r)?"★ 단골":"☆ 단골"}</button><button class="act" type="button" data-act="share">📤 공유</button><button class="act" type="button" data-act="fix">✏️ 정보 틀림</button>${r.movie?`<a class="route mvlink" href="${movieUrl(r)}" target="_blank" rel="noopener">🎬 상영시간표</a>${r.movie.url?`<a href="${esc(r.movie.url)}" target="_blank" rel="noopener">네이버 지도 예매</a>`:""}`:""}<button class="foldbtn" type="button">▾ 자세히</button></div>`;
+      <div class="links">${info}${route}${naver}${r.her||r.shelter||r.kio||r.rest||(r.office&&!r.ph)?"":r.park?(r.ph?`<a class="call" href="${telHref(r.ph)}">📞 <span class="cl">관리부서 </span><span class="tel"></span></a>`:""):r.ev?(r.ph?`<a class="call" href="${telHref(r.ph)}">📞 <span class="cl">운영사 </span><span class="tel"></span></a>`:""):r.toilet?(r.ph?`<a class="call" href="${telHref(r.ph)}">📞 <span class="cl">관리기관 </span><span class="tel"></span></a>`:""):r.ph?`<a class="call" href="${telHref(r.ph)}">📞 <span class="cl">전화 </span><span class="tel"></span></a>`:`<a href="https://m.search.naver.com/search.naver?query=${encodeURIComponent((isNb(r)?rgOf(r):"김천")+" "+r.n+" 전화번호")}" target="_blank" rel="noopener">전화번호 찾기(네이버)</a>`}${r.lat!=null?'<button class="here" type="button">여기 기준</button>':''}<button class="act${isFav(r)?" on":""}" type="button" data-act="fav">${isFav(r)?"★ 단골":"☆ 단골"}</button><button class="act" type="button" data-act="share">📤 공유</button><button class="act" type="button" data-act="fix">✏️ 정보 틀림</button>${r.movie?`<a class="route mvlink" href="${movieUrl(r)}" target="_blank" rel="noopener">🎬 상영시간표</a>${IS_MOB?`<a href="${googleMv(r)}" target="_blank" rel="noopener">구글 상영시간표</a>`:r.movie.pid?`<a href="https://m.place.naver.com/place/${r.movie.pid}/movie" target="_blank" rel="noopener">네이버 예매</a>`:""}`:""}<button class="foldbtn" type="button">▾ 자세히</button></div>`;
     li.classList.add("fold"); if(r.erx||r.kid) li.classList.add("keeptags");
     li.querySelector(".t").textContent=r.n;
     { const tx=(r.her&&r.her.content)||(r.tour&&r.tour.ov)||""; if(tx){ const pv=document.createElement("p"); pv.className="pv"; pv.textContent=tx.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim(); li.querySelector(".ad").append(pv); } }
