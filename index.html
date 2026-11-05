@@ -673,7 +673,7 @@ const kcat=lab=>{ let ci=D.cats.indexOf("아이/"+lab); if(ci<0){ D.cats.push("�
   R.push({n,a,c:kcat("응급실"),e:-1,m:1,lat,lng,k:"",kn:"",ph:tel,menu:"kid",g:null,kid:{rg,ped:!!PED_ER[n]},erx:{cls,hpid,ped:PED_ER[n]||""},s:(n+" "+a+" 응급실 "+cls).toLowerCase()});
 });
 function erBeds(r){ if(!r.erx||!ERB||!ERB.beds) return null; return ERB.beds[r.erx.hpid]||null; }
-const bedTxt=(v,tot)=> v==null ? null : v<=0 ? "꽉 참" : `${v}${tot?"/"+tot:""}`;
+const bedTxt=(v,tot)=> v==null ? null : v<=0 ? "꽉 참" : tot ? `${tot}개 중 ${v}개 남음` : `${v}개 남음`;
 function erTags(r){ const b=erBeds(r); let h=`<span class="tag er">${r.erx.ped?esc(r.erx.ped):"응급실 24시간"}</span><span class="tag tf">${esc(r.erx.cls)}</span>`;
   if(!b) return h+(ERB?'<span class="tag loc">실시간 병상 정보 없음</span>':'');
   const g=bedTxt(b[0],b[1]), p=bedTxt(b[2],b[3]);
@@ -722,7 +722,7 @@ let EVS=null; // 김천 전기차 충전기 상태(ev.json, 30분마다)
 function loadEV(){ if(loadEV.busy||(EVS&&Date.now()-EVS._t<5*60000)) return; loadEV.busy=true;
   fetch("ev.json?t="+Math.floor(Date.now()/60000),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.s){ const u=Date.parse(String(j.updated||"").replace(" ","T")+":00+09:00"); if(!(Date.now()-u<3*3600e3)){ j.s=null; j.stale=true; } EVS=j; EVS._t=Date.now(); if(st.sec==="near"||st.menu==="ev") render(); } }).catch(()=>{}).finally(()=>{loadEV.busy=false;}); }
 const evNow=r=>r.ev&&r.ev.sid&&EVS&&EVS.s?EVS.s[r.ev.sid]||null:null;
-const evTag=r=>{ const v=evNow(r); if(!v) return ""; return `<span class="tag ${v[0]>0?"op":"cl"}">빈 충전기 ${v[0]}/${v[1]}${v[3]?` · 급속 ${v[2]}/${v[3]}`:""}</span>`; };
+const evTag=r=>{ const v=evNow(r); if(!v) return ""; return `<span class="tag ${v[0]>0?"op":"cl"}">${v[0]>0?`${v[1]}대 중 ${v[0]}대 비었음`:`${v[1]}대 다 쓰는 중`}${v[3]?` · 급속 ${v[3]}대 중 ${v[2]}대`:""}</span>`; };
 function loadER(){ if(loadER.busy||(ERB&&Date.now()-ERB._t<5*60000)) return; loadER.busy=true;
   const fresh=j=>{ const u=Date.parse(String(j.updated||"").replace(" ","T")+":00+09:00"); return Date.now()-u<3*3600e3; };
   const use=j=>{ if(!fresh(j)){ j.stale=true; j.beds=null; } ERB=j; ERB._t=Date.now(); if(st.sec==="near"||st.menu==="kid") render(); };
@@ -1277,7 +1277,7 @@ function render(){
   if(!st.base) sum += ` · <span>기준 위치를 고르면 가까운 순으로 정렬됩니다.</span>`;
   if(fuel && !st.q && !st.memOnly && !R.some(r=>r.gasNM)) sum += ` · <span>비가맹 주유소 가격은 다음 자동 갱신(하루 2번) 뒤부터 보여여.</span>`;
   if(st.menu==="kid"&&!st.q){ loadER(); const up=ERB&&ERB.stale?"자료가 오래돼 병상 숫자는 숨겼어여":ERB&&ERB.updated?ERB.updated.slice(11,16)+" 받아옴":"";
-    sum=`<div class="sos kidsos"><b>🚨 아이가 숨쉬기 힘들어하거나, 축 처져 잘 안 깨거나, 경련이 멈추지 않으면 기다리지 말고 <a href="tel:119">☎ 119</a></b><br>어디로 가야 할지 모르겠으면 119에 전화해도 병원 안내·응급처치 상담을 받을 수 있어여.<br>📞 <b style="font-size:14px">출발 전에 꼭 전화</b>해서 지금 소아 진료되는지 물어보세여. 응급실도 소아 전문의가 없을 때가 있어여.<br><small>병상 숫자 = 남은 병상/전체 · 국립중앙의료원 실시간 자료${up?" ("+up+")":""} · 김천과 위에서 고른 이웃 지역(구미·상주·칠곡·성주·대구)을 가까운 순으로 보여여</small></div>`+sum; }
+    sum=`<div class="sos kidsos"><b>🚨 아이가 숨쉬기 힘들어하거나, 축 처져 잘 안 깨거나, 경련이 멈추지 않으면 기다리지 말고 <a href="tel:119">☎ 119</a></b><br>어디로 가야 할지 모르겠으면 119에 전화해도 병원 안내·응급처치 상담을 받을 수 있어여.<br>📞 <b style="font-size:14px">출발 전에 꼭 전화</b>해서 지금 소아 진료되는지 물어보세여. 응급실도 소아 전문의가 없을 때가 있어여.<br><small>병상은 응급실에 지금 남은 침상 수(꽉 차도 진료는 받을 수 있지만 오래 기다릴 수 있음) · 국립중앙의료원 실시간 자료${up?" ("+up+")":""} · 김천과 위에서 고른 이웃 지역(구미·상주·칠곡·성주·대구)을 가까운 순으로 보여여</small></div>`+sum; }
   if(st.menu==="ev"&&!st.q) sum=`<span>${EVS&&EVS.s?`🔌 충전기 상태: ${esc(EVS.updated.slice(11,16))} 기준(30분마다, 김천만 · 이웃 시군은 상태 정보 없음)`:EVS&&EVS.stale?"🔌 충전기 상태 자료가 오래돼 숨겼어여":"🔌 충전기 상태 불러오는 중…"}</span> · `+sum;
   if(st.menu==="repair"&&!st.q) sum=`<div class="sos"><b>차 섰나? 놀라지 말고 이 순서로!</b><br>① 안전한 곳으로 피하고 비상등·삼각대<br>② <b style="font-size:14px">가입한 자동차보험 긴급출동</b>(24시간, 보험증권·보험사 앱에 번호 있음)<br>③ 고속도로라면 한국도로공사 긴급견인 <a href="tel:15882504">☎ 1588-2504</a> — 승용차·1.4톤 이하, 가까운 휴게소·영업소까지 무료(연 2회)<br>④ 그다음 가까운 정비소 ↓ (밤·주말엔 대부분 문 닫아요)</div>`+sum;
   if(groups) sum+=`<div class="rgcnts">${groups.map(g=>`<button type="button" class="rgjump" data-g="${esc(g)}">📍 ${esc(g)} <b>${won(gcnt[g])}</b>곳</button>`).join("")}</div>`;
