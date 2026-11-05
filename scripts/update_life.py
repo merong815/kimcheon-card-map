@@ -30,6 +30,7 @@ KEY = os.environ.get("DATA_GO_KR_KEY", "").strip()
 COLD_KEY = os.environ.get("SAFETY_COLD_KEY", "").strip()
 HEAT_KEY = os.environ.get("SAFETY_HEAT_KEY", "").strip()
 KAKAO = os.environ.get("KAKAO_REST_KEY", "").strip()
+KOBIS = os.environ.get("KOBIS_KEY", "").strip()
 GC = "5060000"  # 김천시 개방자치단체코드
 # 이웃 시군(생활정보만, nb/<slug>.json에 따로 저장): 이름, 개방자치단체코드, 행정구역코드, 파일 이름
 NEIGHBORS = [("구미시", "5080000", "47190", "gumi"), ("상주시", "5110000", "47250", "sangju"),
@@ -763,6 +764,38 @@ def movie(cx):
     return out
 
 
+def movies():
+    """요즘 영화 뭐 보노? — 영화진흥위원회(KOBIS) 일별 박스오피스, 경상북도 지역(어제) → movies.json"""
+    if not KOBIS:
+        print("[movies] KOBIS_KEY 없음 → 건너뜀")
+        return
+    base = "http://www.kobis.or.kr/kobisopenapi/webservice/rest"
+    codes = get(f"{base}/code/searchCodeList.json?key={q(KOBIS)}&comCode=0105000000")
+    area = next((c for c in codes["codes"] if re.search(r"경상북도|경북", c.get("korNm", ""))), None)
+    if not area:
+        raise RuntimeError("경북 지역코드를 못 찾음")
+    for back in (1, 2, 3):   # 어제 자료가 아직 없으면 그 전날
+        day = (datetime.now(KST) - timedelta(days=back)).strftime("%Y%m%d")
+        d = get(f"{base}/boxoffice/searchDailyBoxOfficeList.json?key={q(KOBIS)}&targetDt={day}&wideAreaCd={area['fullCd']}")
+        lst = d.get("boxOfficeResult", {}).get("dailyBoxOfficeList", [])
+        if lst:
+            break
+    if not lst:
+        raise RuntimeError("박스오피스 자료 없음")
+    items = [[int(x["rank"]), x["movieNm"], x.get("openDt", ""), int(x.get("audiCnt") or 0), x.get("rankOldAndNew", "")] for x in lst]
+    out = {"date": day, "area": area.get("korNm", "경상북도"), "items": items}
+    try:
+        old = json.load(open("movies.json", encoding="utf-8"))
+        if {k: old.get(k) for k in out} == out:
+            print("[movies] 바뀐 것 없음")
+            return
+    except (FileNotFoundError, ValueError):
+        pass
+    out["updated"] = datetime.now(KST).strftime("%Y-%m-%d %H:%M")
+    json.dump(out, open("movies.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+    print(f"[movies] {out['area']} {day} {len(items)}편 저장")
+
+
 def fest():
     """전국 축제(한국관광공사 TourAPI searchFestival2) → fest.json (오늘 이후 끝나는 행사)"""
     today = datetime.now(KST).strftime("%Y%m%d")
@@ -883,6 +916,10 @@ def main():
         fest()
     except Exception as e:
         print(f"[fest] 실패 → 기존 파일 유지: {e}")
+    try:
+        movies()
+    except Exception as e:
+        print(f"[movies] 실패 → 기존 파일 유지: {e}")
     # 김천 공중화장실: 1년에 몇 곳 느는 정도라 보름에 한 번만
     today = datetime.now(KST)
     ta = re.sub(r"\D", "", str(D.get("toiletAsof", "")))[:8]
