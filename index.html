@@ -754,8 +754,10 @@ const rgOf=r=>r.rg||(r.kid&&r.kid.rg)||"";
 // ---------- 김천사랑카드 가맹 여부: 병원·치과·약국·정비소·동물병원·관광지 등을 가맹점 목록과 이름+위치로 맞춰 봄 ----------
 const MEM_MENUS=["pharm","hosp","dent","kid","repair","vet","movie"];
 // 영화관 상영시간표: 네이버 지도 장소(‘예매’ 탭에 시간표) 공유 링크. 없는 극장은 네이버 검색으로
-const MOVIE_URL=[[/CGV/i,"https://naver.me/xLWM44Od"],[/메가박스/,"https://naver.me/5LQhcX0k"]];
-const movieUrl=r=>{ const m=MOVIE_URL.find(([re])=>re.test(r.n)); return m?m[1]:"https://m.search.naver.com/search.naver?query="+encodeURIComponent(r.n+" 상영시간표"); };
+// 네이버 지도 장소번호 → '영화'(예매·시간표) 탭이 열린 채로: 휴대폰은 모바일 장소 화면, PC는 네이버 지도
+const MOVIE_URL=[[/CGV/i,"38712526"],[/메가박스/,"37162753"]];
+const movieUrl=r=>{ const m=MOVIE_URL.find(([re])=>re.test(r.n)); if(!m) return "https://m.search.naver.com/search.naver?query="+encodeURIComponent(r.n+" 상영시간표");
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ? `https://m.place.naver.com/place/${m[1]}/movie` : `https://map.naver.com/p/entry/place/${m[1]}?placePath=%2Fmovie`; };
 const memName=s=>String(s||"").replace(/\(.*?\)|주식회사|㈜|\s|[·.,\-]/g,"").toLowerCase();
 function markMembers(){ const idx={}, grid={}, gk=(a,b)=>Math.round(a*200)+":"+Math.round(b*200);
   for(let i=0;i<D.rows.length;i++){ const m=R[i]; if(m.lat==null) continue; const k=memName(m.n); m._mk=k; if(k.length>=2) (idx[k]||(idx[k]=[])).push(m); (grid[gk(m.lat,m.lng)]||(grid[gk(m.lat,m.lng)]=[])).push(m); }
