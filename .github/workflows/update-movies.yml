@@ -1,0 +1,48 @@
+name: 요즘 영화 갱신
+
+on:
+  schedule:
+    # 매일 한국시간 08:13 (UTC 23:13) — 전날 박스오피스가 아침에 확정됨
+    - cron: "13 23 * * *"
+  workflow_dispatch: {}   # Actions 화면에서 'Run workflow'로 바로 실행(1분 안에 끝남)
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-movies
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 영화진흥위원회(KOBIS) 경북 박스오피스 받기
+        env:
+          KOBIS_KEY: ${{ secrets.KOBIS_KEY }}
+        run: python scripts/update_life.py --movies
+
+      - name: 바뀐 자료 저장
+        run: |
+          if [ ! -f movies.json ]; then echo "movies.json 없음"; exit 0; fi
+          cp movies.json /tmp/movies.json
+          git config user.name "movie-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for i in 1 2 3; do
+            git fetch origin main
+            git reset --hard origin/main
+            cp /tmp/movies.json movies.json
+            git add movies.json
+            if git diff --cached --quiet; then echo "바뀐 것 없음"; exit 0; fi
+            git commit -m "요즘 영화 갱신 $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')"
+            if git push; then exit 0; fi
+            sleep 10
+          done
+          exit 1
