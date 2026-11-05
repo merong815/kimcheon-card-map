@@ -744,6 +744,25 @@ def kidp(cx):
     return rows
 
 
+def movie(cx):
+    """김천 영화관(카카오 장소 '영화관' 분류). 상영시간표는 공개 자료가 없어 앱에선 극장 공식 시간표로 연결만 함"""
+    if not KAKAO:
+        raise RuntimeError("KAKAO_REST_KEY 없음")
+    out, seen = [], set()
+    for kw in ["영화관", "CGV", "메가박스", "롯데시네마", "시네마"]:
+        req = urllib.request.Request("https://dapi.kakao.com/v2/local/search/keyword.json?size=15&x=128.1137&y=36.1398&radius=20000&query=" + q(kw),
+                                     headers={"Authorization": "KakaoAK " + KAKAO})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            docs = json.loads(r.read().decode("utf-8")).get("documents", [])
+        for x in docs:
+            if "김천" not in x.get("address_name", "") or "영화관" not in x.get("category_name", "") or x["id"] in seen:
+                continue
+            seen.add(x["id"])
+            out.append([x["place_name"], x.get("road_address_name") or x["address_name"], round(float(x["y"]), 5), round(float(x["x"]), 5),
+                        x.get("phone", ""), x["id"]])
+    return out
+
+
 def fest():
     """전국 축제(한국관광공사 TourAPI searchFestival2) → fest.json (오늘 이후 끝나는 행사)"""
     today = datetime.now(KST).strftime("%Y%m%d")
@@ -855,7 +874,7 @@ def main():
     D = json.loads(m.group(1))
     cx = Ctx(D)
     jobs = [("pharm", pharm), ("hosp", hosp), ("kiosk", kiosk), ("park", park), ("shelter", shelter), ("ev", ev), ("repair", repair), ("parking", parking), ("kid", kid), ("er", er),
-            ("aed", aed), ("vet", vet), ("wifi", wifi), ("sports", sports), ("kidp", kidp)]
+            ("aed", aed), ("vet", vet), ("wifi", wifi), ("sports", sports), ("kidp", kidp), ("movie", movie)]
     if COLD_KEY:
         jobs.append(("cold", cold))
     if HEAT_KEY:
