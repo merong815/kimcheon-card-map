@@ -634,8 +634,8 @@ if(rg) for(let i=start;i<R.length;i++){ R[i].rg=rg; R[i].e=-1; }
 }
 // 영화관(상영시간표 = 네이버 지도 '영화' 탭 링크, 만든 사람이 직접 확인한 주소)
 const MOVIES=[
-  {n:"CGV 김천율곡",re:/CGV/i,a:"경북 김천시 혁신2로 15 더스퀘어 (율곡동)",lat:36.11488,lng:128.18342,alias:"cgv 더스퀘어",url:"https://map.naver.com/p/entry/place/38712526?placePath=%2Fmovie%3FfromPanelNum%3D1%26additionalHeight%3D76%26timestamp%3D202611051857%26locale%3Dko%26svcName%3Dmap_pcv5&c=15.00,0,0,0,dh"},
-  {n:"메가박스 김천",re:/메가박스|시네마김천/,a:"경북 김천시 김천로 74 4층 (평화동,한일빌딩)",alias:"시네마김천 megabox",url:"https://map.naver.com/p/entry/place/37162753?c=15.00,0,0,0,dh&placePath=%2Fmovie%3FfromPanelNum%3D1%26additionalHeight%3D76%26timestamp%3D202611051858%26locale%3Dko%26svcName%3Dmap_pcv5"}];
+  {n:"CGV 김천율곡",re:/CGV/i,a:"경북 김천시 혁신2로 15 더스퀘어 (율곡동)",lat:36.11488,lng:128.18342,alias:"cgv 더스퀘어",url:"https://map.naver.com/p/search/CGV%20%EA%B9%80%EC%B2%9C/place/38712526?placePath=%2Fhome%3Fbk_query%3DCGV%20%EA%B9%80%EC%B2%9C%26entry%3D%26fromNxList%3Dtrue%26from%3Dmap%26fromPanelNum%3D2%26timestamp%3D202611052041%26locale%3Dko%26svcName%3Dmap_pcv5%26searchText%3DCGV%20%EA%B9%80%EC%B2%9C&from=nx&fromNxList=true&searchType=place&c=15.00,0,0,0,dh"},
+  {n:"메가박스 김천",re:/메가박스|시네마김천/,a:"경북 김천시 김천로 74 4층 (평화동,한일빌딩)",alias:"시네마김천 megabox",url:"https://map.naver.com/p/search/%EB%A9%94%EA%B0%80%EB%B0%95%EC%8A%A4%20%EA%B9%80%EC%B2%9C?c=15.00,0,0,0,dh&placePath=%2Fmovie%3FfromPanelNum%3D1%26additionalHeight%3D76%26timestamp%3D202611052041%26locale%3Dko%26svcName%3Dmap_pcv5%26searchText%3D%EB%A9%94%EA%B0%80%EB%B0%95%EC%8A%A4%20%EA%B9%80%EC%B2%9C"}];
 buildLife(D,null);
 // ---------- 아이랑 갈 데: 키즈카페·놀이시설(행정안전부 어린이놀이시설) + 체험·박물관·도서관·캠핑(카카오 장소) + 어린이공원 ----------
 { const kc=sub=>{ const lab="아이랑/"+sub; let ci=D.cats.indexOf(lab); if(ci<0){ D.cats.push(lab); D.catMenu.push("kids"); ci=D.cats.length-1; } return ci; };
@@ -1061,7 +1061,7 @@ function nearCats(now=new Date()){
   const mo=now.getMonth()+1;
   const cats=[
     {id:"kid",t:"아가 아프나? 소아과·응급실",open:true,kid:true},
-    {id:"hosp",t:"아프나? 병원·응급실",open:true,f:r=>!/한의원|요양병원/.test(r.hos.div)&&!/소아|아동병원|어린이/.test(r.n+" "+r.hos.div)},
+    {id:"hosp",t:"아프나? 병원·응급실",open:true,f:r=>!/한의원|요양병원/.test(r.hos.div)&&!/소아|아동병원|어린이|성형|피부|미용|뷰티|에스테|비만|탈모|모발/.test(r.n+" "+r.hos.div)},
     {id:"pharm",t:"약 무긋나? · 약국",open:true},
     {id:"aed",t:"쓰러졌나? 자동심장충격기(AED)",open:true,note:"먼저 ☎119! 상황실에서 가까운 AED와 쓰는 법을 알려줘여"},
     {id:"toilet",t:"급하나? 화장실"},
@@ -1117,10 +1117,14 @@ function renderNear(){
     if(c.evfree){ loadEV(); if(EVS&&EVS.s){ const d0=rows.length?rows[0].d:0, fr=rows.filter(r=>{const v=evNow(r); return v&&v[0]>0&&r.d<=d0+2;}); if(fr.length) rows=fr.concat(rows.filter(r=>!fr.includes(r))); } }
     let pick = c.open ? rows.filter(r=>r.ps.open).slice(0,2) : rows.slice(0,2);
     let closedNote="";
-    if(c.kid){ loadER(); const cl=rows.filter(r=>!r.erx&&r.kid.ped&&r.ps.open).slice(0,2); const ers=rows.filter(r=>r.erx);
-      // 소아 병상을 알려주는 응급실(대구 등)은 문 연 소아과가 없을 때(밤·휴일)만, 60km 안이면 덧붙임
-      const pe=cl.length?null:ers.find(r=>{const b=erBeds(r); return b&&b[3]!=null&&r.d<60;}); pick=[...cl, ...(ers[0]?[ers[0]]:[]), ...(pe&&pe!==ers[0]?[pe]:[])];
-      if(!cl.length) closedNote="지금 문 연 소아과가 없어여 😢 급하면 응급실로, 아주 급하면 ☎119!"; }
+    if(c.kid){ loadER(); const clAll=rows.filter(r=>!r.erx&&r.kid.ped&&r.ps.open), ers=rows.filter(r=>r.erx);
+      const cl=clAll.filter(r=>r.d<10).slice(0,2);   // 가까운(10km 안) 문 연 소아과
+      if(cl.length) pick=[...cl, ...(ers[0]?[ers[0]]:[])];
+      else { // 밤·휴일처럼 가까운 소아과가 문 닫았으면: 큰 병원 응급실 먼저 → 달빛어린이병원 → 소아 병상 있는 응급실
+        const moon=clAll.filter(r=>r.kid.moon&&r.d<45).slice(0,1);
+        const pe=ers.find(r=>{const b=erBeds(r); return b&&b[3]!=null&&r.d<60;});
+        pick=[...ers.slice(0,2), ...moon, ...(pe&&!ers.slice(0,2).includes(pe)?[pe]:[])];
+        closedNote = moon.length ? "김천엔 지금 문 연 소아과가 없어여 😢 응급실이나 달빛어린이병원(밤·휴일 소아 진료)으로, 아주 급하면 ☎119!" : "지금 문 연 소아과가 없어여 😢 급하면 응급실로, 아주 급하면 ☎119!"; } }
     if(c.open&&!pick.length){ pick=rows.slice(0,1); closedNote="지금 문 연 데가 없어여 😅 제일 가까운 데라도 보여드릴게여."; }
     const card=document.createElement("section"); card.className="ncard nccol"+(c.kid?" kidcard":""); card.style.setProperty("--nc",NEAR_COL[c.id]||"#0f7a5c");
     card.innerHTML=`<div class="nh"><h2>${esc(c.t)}</h2><button type="button" class="nmore">다 보까? →</button></div>`+
@@ -1281,7 +1285,6 @@ function render(){
   const kro=r=>r.kid?RG_ORDER.indexOf(r.kid.rg)*10+(r.erx?0:r.kid.moon?1:r.kid.ped?2:3):isNb(r)?100:0;
   rows.sort((a,b)=> cheap ? (effP(a,st.fuel)-effP(b,st.fuel)) || ((a.d??1e9)-(b.d??1e9))
                           : ((a.d??1e9)-(b.d??1e9)) || (kro(a)-kro(b)) || a.n.localeCompare(b.n,"ko"));
-  if(st.sec==="her"&&st.menu==="movie"&&!st.q) rows.sort((a,b)=>a.movie.ord-b.movie.ord);
   // 지역이 여럿이면 지역별로 묶음(가까운 지역부터), 묶음 안은 가까운 순 — 값싼 순 정렬일 땐 안 묶음
   let groups=null; const gcnt={};
   if(rgMode && !cheap){ rows.forEach(r=>{ const g=grpOf(r); gcnt[g]=(gcnt[g]||0)+1; });
