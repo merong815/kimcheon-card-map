@@ -898,6 +898,9 @@ def main():
     if len(sys.argv) == 3 and sys.argv[1] == "--apply":
         apply_patch(sys.argv[2])
         return
+    if len(sys.argv) == 2 and sys.argv[1] == "--movies":   # 요즘 영화만 빨리(1분 안)
+        movies()
+        return
     if not KEY:
         sys.exit("DATA_GO_KR_KEY 비밀값이 없습니다.")
     t = open(HTML, encoding="utf-8").read()
