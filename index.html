@@ -311,6 +311,8 @@ li.it.fest .thumb{float:right;width:96px;height:72px;object-fit:cover;border-rad
 .rgjump b{color:var(--accent)}
 li.rghead{list-style:none;font-family:"Jua",var(--f-body,system-ui),sans-serif;font-size:19px;padding:14px 4px 4px;border-bottom:2px solid var(--accent);color:var(--ink);scroll-margin-top:140px}
 li.rghead b{color:var(--accent)}
+.mvtop{margin:4px 0 2px;padding:0;list-style:none;font-size:16.5px;line-height:1.75}.mvtop .mvn{display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;border-radius:50%;background:#7048e8;color:#fff;font-size:13px;font-weight:700;margin-right:8px}.mvtop b{font-weight:700}
+.mvsum{margin-top:6px;font-size:14.5px;line-height:1.6}
 .foldbtn{background:none;border:1px solid var(--line);border-radius:99px;padding:7px 13px;font-size:14.5px;color:var(--muted);cursor:pointer;font-family:inherit}
 .ncard .nitem .nl>b:first-child{font-size:17px}
 .ncard .nitem .na{font-size:14.5px;opacity:.78}
@@ -480,6 +482,7 @@ body.compact .ctlopen{display:inline-block;position:absolute;right:12px;top:6px;
     <p>공중화장실: 공공데이터포털 전국공중화장실표준데이터(김천시 등록분, 데이터 기준일 2025.6.30). 개방화장실은 민간·공공 건물의 화장실을 개방한 곳입니다.</p>
     <p>아이랑 갈 데: 키즈카페·실내 놀이시설은 행정안전부 전국어린이놀이시설정보(놀이제공영업소, 운영 중인 곳, 김천·구미·칠곡·상주·성주·대구), 체험학습장·박물관·도서관·캠핑장 등은 카카오 장소 정보(김천), 공원은 도시공원 자료입니다. 매일 자동 갱신되며 운영 여부·이용 연령은 가기 전에 확인하세요.</p>
     <p>영화관: 김천사랑카드 가맹점 목록·카카오 장소 정보. 상영시간표는 공개된 자료가 없어 ‘🎬 상영시간표’를 누르면 휴대폰에선 네이버 장소의 영화(시간표·예매) 화면, 컴퓨터에선 구글 검색의 그 극장 상영시간표로 연결됩니다.</p>
+    <p>요즘 영화 뭐 보노?: 영화진흥위원회 영화관입장권 통합전산망(KOBIS) 일별 박스오피스 중 경상북도 지역(전날 기준, 매일 갱신). 김천 극장별 상영작이 아니라 경북 극장 전체 관객 순위입니다.</p>
     <p>전국 축제: 한국관광공사 TourAPI 행사정보(매일 자동 갱신, 사진 출처 한국관광공사). 일정은 주최 측 사정으로 바뀔 수 있습니다.</p>
     <p id="lifeasof"></p>
     
@@ -1137,10 +1140,19 @@ function renderNear(){
     card.querySelector(".nmore").addEventListener("click",()=>{ if(c.her){ st.herMenu=c.id; setSec("her"); } else { st.lifeMenu=c.id; setSec("life"); } });
     grid.appendChild(card);
   });
+  // 🎬 요즘 영화 뭐 보노? (영화진흥위원회 경북 일별 박스오피스) → '영화 보자' 누르면 영화관 목록
+  loadMovies(); if(MVT&&MVT.items&&MVT.items.length){ const card=document.createElement("section"); card.className="ncard nccol mvcard"; card.style.setProperty("--nc","#7048e8");
+    const d=MVT.date||""; card.innerHTML=`<div class="nh"><h2>🎬 요즘 영화 뭐 보노?</h2><button type="button" class="nmore">영화 보자 →</button></div>`+
+      `<ol class="mvtop">${MVT.items.slice(0,5).map((x,i)=>`<li><span class="mvn">${i+1}</span><b>${esc(x[1])}</b>${x[4]==="NEW"?' <span class="tag op">새로 개봉</span>':""}</li>`).join("")}</ol>`+
+      `<p class="nnote">${+d.slice(4,6)}.${+d.slice(6)} ${esc((MVT.area||"경북").replace("경상북도","경북"))} 극장 관객 많은 순(영화진흥위원회) · 김천 극장 상영 여부·시간은 ‘영화 보자’에서 확인</p>`;
+    card.querySelector(".nmore").addEventListener("click",()=>{ st.herMenu="movie"; setSec("her"); });
+    const kc=[...grid.children].find(c=>/아이랑 어데 가꼬/.test(c.textContent)); if(kc&&kc.nextSibling) grid.insertBefore(card,kc.nextSibling); else grid.appendChild(card); }
   if(FEEDBACK_URL){ loadBus(); const bc=busCard(false); const cards=[...grid.children]; const ph=cards.find(c=>/자동심장충격기/.test(c.textContent))||cards.find(c=>/약 무긋나/.test(c.textContent)); if(ph&&ph.nextSibling) grid.insertBefore(bc,ph.nextSibling); else grid.appendChild(bc); }
   const cardsAll=[...grid.children];
-  if(!st.nearAll&&cardsAll.length>7){ cardsAll.slice(7).forEach(c=>c.hidden=true);
-    const mb=document.createElement("button"); mb.type="button"; mb.className="btn nearall"; mb.textContent=`다른 것도 보기 (${cardsAll.length-7}개 더: 주차장·정비소·충전소·공원 등) ▾`;
+  // 처음엔 '아이랑 어데 가꼬?'·'요즘 영화'까지 보이고 나머지는 접어 둠
+  const NV=Math.max(7, cardsAll.findIndex(c=>c.classList.contains("mvcard"))+1, cardsAll.findIndex(c=>/아이랑 어데 가꼬/.test(c.textContent))+1);
+  if(!st.nearAll&&cardsAll.length>NV){ cardsAll.slice(NV).forEach(c=>c.hidden=true);
+    const mb=document.createElement("button"); mb.type="button"; mb.className="btn nearall"; mb.textContent=`다른 것도 보기 (${cardsAll.length-NV}개 더: 주차장·정비소·충전소·공원 등) ▾`;
     mb.addEventListener("click",()=>{ st.nearAll=true; cardsAll.forEach(c=>c.hidden=false); mb.remove(); }); grid.after(mb); setTimeout(()=>grid.after(mb),0); }
   loadEvents();
   if(EVT){ const td=ymdKey(now), tm=ymdKey(new Date(now.getTime()+864e5)); let day=td, ev=EVT.items.filter(i=>i[0]===td&&evtPublic(i));
@@ -1169,6 +1181,10 @@ const ADMIN_RE=/심의|위원회|회의|워크숍|역량\s*강화|보고회|간�
 function loadEvents(){ if(loadEvents.done) return; loadEvents.done=true;
   fetch("events.json?t="+Math.floor(Date.now()/600000),{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.items){ EVT=j; if(st.sec==="events") $("secsub").textContent=SECS.events.sub(); if(st.sec==="near"||st.sec==="events") render(); } }).catch(()=>{}); }
 const evtPublic=i=>!ADMIN_RE.test(i[2]);
+// ---------- 요즘 영화(movies.json, 매일 갱신) ----------
+let MVT=null;
+function loadMovies(){ if(loadMovies.done) return; loadMovies.done=true;
+  fetch("movies.json?t="+Math.floor(Date.now()/3600000),{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.items){ MVT=j; if(st.sec==="near"||(st.sec==="her"&&st.menu==="movie")) render(); } }).catch(()=>{}); }
 // ---------- 전국 축제(한국관광공사 TourAPI 행사정보, 매일 갱신 fest.json) ----------
 let FEST=null;
 function loadFest(){ if(loadFest.done) return; loadFest.done=true;
@@ -1317,6 +1333,7 @@ function render(){
     if(rows.length&&none.length) sum+=`<br><small class="nbmiss">${none.join("·")}는 이 항목 공공데이터가 아직 없어여.</small>`;
     else if(st.nbSel.has("대구")&&!Object.keys(NB).some(rg=>NB[rg].dg&&nbLoaded[rg])) sum+=`<br><small class="nbmiss">대구는 기준 위치가 대구 가까이 있을 때만 불러와여.</small>`;
   }
+  if(st.sec==="her"&&st.menu==="movie"&&!st.q){ loadMovies(); if(MVT&&MVT.items&&MVT.items.length) sum+=`<div class="mvsum">🎬 <b>요즘 영화</b> (${+MVT.date.slice(4,6)}.${+MVT.date.slice(6)} 경북 극장 관객 순): ${MVT.items.slice(0,5).map((x,i)=>`${i+1}. ${esc(x[1])}`).join(" · ")}</div>`; }
   if(st.sec==="card"&&!fuel&&st.menu!=="good"&&!st.q) sum+=`<br><small class="nbmiss">가맹점 목록 ${D.memAsof?D.memAsof.slice(4,6)*1+"."+D.memAsof.slice(6)*1:""} 기준(김천시 자료) · 폐업·변경은 늦게 반영될 수 있어여</small>`;
   $("summary").innerHTML = sum;
   const list=$("list"); list.textContent="";
