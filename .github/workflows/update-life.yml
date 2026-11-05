@@ -30,6 +30,7 @@ jobs:
           SAFETY_COLD_KEY: ${{ secrets.SAFETY_COLD_KEY }}
           SAFETY_HEAT_KEY: ${{ secrets.SAFETY_HEAT_KEY }}
           KAKAO_REST_KEY: ${{ secrets.KAKAO_REST_KEY }}
+          KOBIS_KEY: ${{ secrets.KOBIS_KEY }}
         run: python scripts/update_life.py
 
       - name: 바뀐 자료 저장
@@ -38,7 +39,7 @@ jobs:
         run: |
           mkdir -p /tmp/out
           if [ -d nb ]; then cp -r nb /tmp/out/; fi
-          for f in fest.json life_patch.json; do if [ -f "$f" ]; then cp "$f" /tmp/out/; fi; done
+          for f in fest.json movies.json life_patch.json; do if [ -f "$f" ]; then cp "$f" /tmp/out/; fi; done
           git config user.name "life-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           for i in 1 2 3; do
@@ -46,9 +47,11 @@ jobs:
             git reset --hard origin/main
             if [ -d /tmp/out/nb ]; then mkdir -p nb && cp -r /tmp/out/nb/. nb/; fi
             if [ -f /tmp/out/fest.json ]; then cp /tmp/out/fest.json .; fi
+            if [ -f /tmp/out/movies.json ]; then cp /tmp/out/movies.json .; fi
             if [ -f /tmp/out/life_patch.json ]; then python scripts/update_life.py --apply /tmp/out/life_patch.json; fi
             git add index.html nb
             if [ -f fest.json ]; then git add fest.json; fi
+            if [ -f movies.json ]; then git add movies.json; fi
             if git diff --cached --quiet; then
               echo "바뀐 자료 없음"
               exit 0
