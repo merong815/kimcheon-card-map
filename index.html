@@ -987,7 +987,7 @@ $("gps").addEventListener("click",()=>{
   const t0=Date.now(); const tick=setInterval(()=>{ const b=nb(); if(b){ b.disabled=true; b.textContent=`⏳ 위치 찾는 중… ${Math.round((Date.now()-t0)/1000)}초`; } },500);
   let done=false, errs=0, wid=null;
   const finish=()=>{ window.__gpsBusy=false; clearInterval(tick); clearTimeout(guard); if(wid!=null){ try{navigator.geolocation.clearWatch(wid);}catch(e){} wid=null; } };
-  const ok=p=>{ if(done)return; done=true; gpsBusy=false; finish();
+  const ok=p=>{ if(done)return; if(badPos(p)){ done=true; gpsBusy=false; finish(); render(); return; } done=true; gpsBusy=false; finish();
     try{ store("kc-lastpos",JSON.stringify({lat:p.coords.latitude,lng:p.coords.longitude,ts:Date.now()})); }catch(e){}
     oG.hidden=false; sel.value="gps"; store("kc-base","gps"); s.className="status"; s.textContent=`내 위치 기준 (오차 약 ${Math.round(p.coords.accuracy)}m)`;
     setBase({lat:p.coords.latitude,lng:p.coords.longitude}); try{ startWatch(); }catch(e){} };
@@ -1461,6 +1461,8 @@ function ensureMap(){
     else { $("status").className="status warn"; $("status").textContent="지도를 불러오지 못했습니다. 인터넷 연결을 확인하고 다시 열어주세요."; mapReady=null; return false; }
     M.init($("map"),36.1199,128.1136);
     M.onDrag(()=>setFollow(false));
+    try{ let lastW=0; new ResizeObserver(es=>{ const w=Math.round(es[0].contentRect.width), h=Math.round(es[0].contentRect.height);
+      if(!w||!h){ lastW=0; return; } if(w!==lastW){ const wasHidden=!lastW; lastW=w; M.relayout(); if(wasHidden&&st.view==="map"){ lastKey=null; if(lastRows) drawMap(lastRows); } } }).observe($("map")); }catch(e){}
     return true;
   })();
   return mapReady;
@@ -1507,7 +1509,13 @@ function drawMap(rows){
     else if(pts.length){ M.fit(pts.map(r=>[r.lat,r.lng]).concat(meLL&&!near3?[]:[])); if(meLL&&!near3) setFollow(false); }
   }
 }
+const BAD_ACC=20000; // 20km 넘게 틀릴 수 있으면 사실상 위치를 모르는 것(PC의 인터넷 주소 추정 등)
+function badPos(p){ const a=p.coords.accuracy||0; if(a<=BAD_ACC) return false;
+  $("status").className="status warn"; $("status").textContent=`이 기기는 위치가 너무 부정확해여(오차 약 ${Math.round(a/1000)}km). 컴퓨터에선 동네를 직접 골라 주세여.`;
+  if(!st.base){ oP.hidden=false; oP.textContent="김천시청 기준"; sel.value="pin"; setBase({lat:36.13979,lng:128.11368}); }
+  return true; }
 function updateMe(p){
+  if(badPos(p)) return;
   const lat=p.coords.latitude, lng=p.coords.longitude; meAcc=p.coords.accuracy||30; meLL=[lat,lng];
   if(M){ const first=!meShown; meShown=true; M.setMe(lat,lng,meAcc); if(follow) M.pan(lat,lng,first); }
   if(sel.value===""||sel.value==="gps"){
