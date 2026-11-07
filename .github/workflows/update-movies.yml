@@ -24,13 +24,15 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: 영화진흥위원회(KOBIS) 경북 박스오피스 받기
+      - name: 영화진흥위원회(KOBIS) 전국 박스오피스 받기
         env:
           KOBIS_KEY: ${{ secrets.KOBIS_KEY }}
         run: python scripts/update_life.py --movies
 
-      - name: 김천시문화예술회관 공연/전시 일정 받기
+      - name: 김천 공연 일정 받기(문화예술회관 일정표 + KOPIS)
         continue-on-error: true
+        env:
+          KOPIS_KEY: ${{ secrets.KOPIS_KEY }}
         run: python scripts/update_gcart.py
 
       - name: 바뀐 자료 저장
