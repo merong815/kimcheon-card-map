@@ -1,4 +1,4 @@
-name: 요즘 영화 갱신
+name: 요즘 영화·공연 갱신
 
 on:
   schedule:
@@ -29,19 +29,21 @@ jobs:
           KOBIS_KEY: ${{ secrets.KOBIS_KEY }}
         run: python scripts/update_life.py --movies
 
+      - name: 김천시문화예술회관 공연/전시 일정 받기
+        continue-on-error: true
+        run: python scripts/update_gcart.py
+
       - name: 바뀐 자료 저장
         run: |
-          if [ ! -f movies.json ]; then echo "movies.json 없음"; exit 0; fi
-          cp movies.json /tmp/movies.json
+          mkdir -p /tmp/o; for f in movies.json gcart.json; do if [ -f "$f" ]; then cp "$f" /tmp/o/; fi; done
           git config user.name "movie-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           for i in 1 2 3; do
             git fetch origin main
             git reset --hard origin/main
-            cp /tmp/movies.json movies.json
-            git add movies.json
+            for f in movies.json gcart.json; do if [ -f "/tmp/o/$f" ]; then cp "/tmp/o/$f" .; git add "$f"; fi; done
             if git diff --cached --quiet; then echo "바뀐 것 없음"; exit 0; fi
-            git commit -m "요즘 영화 갱신 $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')"
+            git commit -m "요즘 영화·공연 갱신 $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')"
             if git push; then exit 0; fi
             sleep 10
           done
