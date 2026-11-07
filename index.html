@@ -213,6 +213,9 @@ main{padding-bottom:64px}
 body.big header .wrap,body.big .ctl .wrap,body.big #near,body.big #summary,body.big #list,body.big #more,body.big #fb,body.big .viewbar{zoom:1.2}
 .act.on{border-color:#e0a800;color:#a77800;font-weight:700}
 .evday{list-style:none;font-family:"Jua",sans-serif;font-size:17px;margin:14px 0 6px;color:var(--ink)}.evday.today{color:var(--accent)}.evday.past,.it.evt.past{opacity:.55}
+.garow{display:flex;gap:10px;align-items:flex-start}.gab{flex:1;min-width:0}.gab .nm{display:block;text-align:left}
+.gapo{flex:none;width:54px;height:76px;object-fit:cover;border-radius:6px;background:var(--line)}
+.it.evt .gapo{width:70px;height:98px}
 .evtime{display:inline-block;min-width:48px;font-family:var(--f-num);font-weight:700;color:var(--accent);margin-right:6px}
 .it.evt .a a{color:inherit}
 .ncard.favcard{border-color:#e0c25a;background:color-mix(in srgb,#f2b233 10%,var(--surface))}
@@ -486,7 +489,7 @@ body.compact .ctlopen{display:inline-block;position:absolute;right:12px;top:6px;
     <p>공중화장실: 공공데이터포털 전국공중화장실표준데이터(김천시 등록분, 데이터 기준일 2025.6.30). 개방화장실은 민간·공공 건물의 화장실을 개방한 곳입니다.</p>
     <p>아이랑 갈 데: 키즈카페·실내 놀이시설은 행정안전부 전국어린이놀이시설정보(놀이제공영업소, 운영 중인 곳, 김천·구미·칠곡·상주·성주·대구), 체험학습장·박물관·도서관·캠핑장 등은 카카오 장소 정보(김천), 공원은 도시공원 자료입니다. 매일 자동 갱신되며 운영 여부·이용 연령은 가기 전에 확인하세요.</p>
     <p>영화관: 김천사랑카드 가맹점 목록·카카오 장소 정보. 상영시간표는 공개된 자료가 없어 ‘🎬 상영시간표’를 누르면 휴대폰에선 네이버 장소의 영화(시간표·예매) 화면, 컴퓨터에선 구글 검색의 그 극장 상영시간표로 연결됩니다.</p>
-    <p>공연: 김천시문화예술회관 누리집 ‘공연/전시 일정표’(매일 자동 갱신). 예매는 회관 예매 사이트(티켓링크)로 연결됩니다.</p>
+    <p>공연: 김천시문화예술회관 누리집 ‘공연/전시 일정표’와 공연예술통합전산망(KOPIS, 예술경영지원센터)의 김천 공연 정보(포스터·가격·관람연령 포함, 매일 자동 갱신). 예매는 티켓링크·네이버 예약으로 연결됩니다.</p>
     <p>배구: 한국도로공사 하이패스 배구단 경기 일정은 한국배구연맹(KOVO) 공식 홈페이지 일정 기준입니다. 경기 시간은 방송 편성 등으로 바뀔 수 있습니다.</p>
     <p>요즘 영화 뭐 보노?: 영화진흥위원회 영화관입장권 통합전산망(KOBIS) 전국 일별 박스오피스(전날 기준, 매일 갱신). 김천 극장별 상영작이 아니라 전국 관객 순위입니다.</p>
     <p>전국 축제: 한국관광공사 TourAPI 행사정보(매일 자동 갱신, 사진 출처 한국관광공사). 일정은 주최 측 사정으로 바뀔 수 있습니다.</p>
@@ -862,7 +865,7 @@ const SECS={
   card:{sub:()=>`기름 어데가 싸노? 주유 할인 비교 · 착한가격업소 ${D.good.length}곳 · 김천사랑카드 가맹점 ${won(D.rows.length)}곳`},
   good:{menu:"good",sub:()=>`김천시 지정 착한가격업소 ${D.good.length}곳 · 김천사랑카드 가맹 ${D.good.filter(g=>g[8].length).length}곳`},
   life:{menu:"pharm",sub:()=>`지금 문 연 약국 ${R.filter(r=>r.pharm&&pharmState(r).open).length}곳`},
-  events:{menu:"events",sub:()=>st.evtMode==="gcart"?"🎭 김천시문화예술회관 공연·전시 일정":st.evtMode==="volley"?"🏐 김천 한국도로공사 하이패스 배구단 경기 일정":st.evtMode==="fest"?"전국 축제 · 한국관광공사 행사정보":EVT?`오늘부터 김천 행사 ${EVT.items.filter(i=>i[0]>=ymdKey(new Date())&&evtPublic(i)).length}건 · 김천시 누리집 ‘주간행사계획’`:"이번 주 김천 행사 · 김천시 누리집 ‘주간행사계획’"},
+  events:{menu:"events",sub:()=>st.evtMode==="gcart"?"🎭 김천 공연·전시 일정 · 문화예술회관·시립문화회관":st.evtMode==="volley"?"🏐 김천 한국도로공사 하이패스 배구단 경기 일정":st.evtMode==="fest"?"전국 축제 · 한국관광공사 행사정보":EVT?`오늘부터 김천 행사 ${EVT.items.filter(i=>i[0]>=ymdKey(new Date())&&evtPublic(i)).length}건 · 김천시 누리집 ‘주간행사계획’`:"이번 주 김천 행사 · 김천시 누리집 ‘주간행사계획’"},
   her:{menu:"heritage",sub:()=>`문화재 ${D.her.length}건 · 관광지 ${D.tour.length}곳 · 아이랑 갈 데 ${R.filter(r=>r.menu==="kids").length}곳`}
 };
 D.menus=D.menus.filter(m=>m[0]!=="good"&&m[0]!=="heritage");
@@ -1198,31 +1201,39 @@ const evtPublic=i=>!ADMIN_RE.test(i[2]);
 let MVT=null;
 function loadMovies(){ if(loadMovies.done) return; loadMovies.done=true;
   fetch("movies.json?t="+Math.floor(Date.now()/3600000),{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.items){ MVT=j; if(st.sec==="near"||(st.sec==="her"&&st.menu==="movie")) render(); } }).catch(()=>{}); }
-// ---------- 🎭 김천시문화예술회관 공연·전시(gcart.json — 회관 누리집 일정표, 매일 갱신) ----------
+// ---------- 🎭 김천 공연·전시(gcart.json — 회관 누리집 일정표 + KOPIS, 매일 갱신) ----------
 let GA=null;
 function loadGcart(){ if(loadGcart.done) return; loadGcart.done=true;
   fetch("gcart.json?t="+Math.floor(Date.now()/3600000),{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.items){ GA=j; if(st.sec==="near"||st.sec==="events") render(); } }).catch(()=>{}); }
 const gaWhen=i=>`${+i[0].slice(5,7)}.${+i[0].slice(8)}(${"일월화수목금토"[new Date(i[0]+"T12:00:00+09:00").getDay()]})${i[1]?" "+i[1]:""}`;
-const gaUp=()=>GA?GA.items.filter(i=>Date.parse(i[0]+"T"+(i[2]||i[1]||"23:59")+":00+09:00")>Date.now()):[];
+const gaX=i=>i[6]&&typeof i[6]==="object"?i[6]:{};
+const gaEnd=i=>{ const tm=(gaX(i).tm||"").split(", ").filter(Boolean); return i[2]||tm[tm.length-1]||i[1]||"23:59"; };
+const gaUp=()=>GA?GA.items.filter(i=>Date.parse((gaX(i).to||i[0])+"T"+gaEnd(i)+":00+09:00")>Date.now()):[];
 const gaView=i=>`https://www.gc.go.kr/gcart/calendar/calendarView.do?mId=0302000000&sdIdx=${encodeURIComponent(i[5])}&sdCategory=gcart`;
-const GA_HALL={n:"김천시문화예술회관",lat:36.13824,lng:128.08863};
+const GA_HALLS={"문화예술회관":{n:"김천시문화예술회관",lat:36.13828,lng:128.08868},"시립문화회관":{n:"김천시립문화회관",lat:36.118733,lng:128.121246},"율곡도서관":{n:"김천시립율곡도서관",lat:36.122166,lng:128.188807}};
+const gaHall=i=>GA_HALLS[Object.keys(GA_HALLS).find(k=>i[4].startsWith(k))]||GA_HALLS["문화예술회관"];
+const gaTk=i=>gaX(i).tk||(i[4].startsWith("문화예술회관")?GA.ticket:"");
+const gaPo=(i,lazy)=>/^https:\/\//.test(gaX(i).po||"")?`<img class="gapo" src="${esc(gaX(i).po)}" alt="" ${lazy?'loading="lazy" ':''}onerror="this.remove()">`:"";
+const gaTimes=i=>{ const x=gaX(i); return x.tm&&x.tm.includes(",")?x.tm:(i[1]||"")+(i[2]?" ~ "+i[2]:""); };
+const gaInfo=i=>{ const x=gaX(i); return [x.pr&&"💳 "+esc(x.pr),x.age&&"👶 "+esc(x.age),x.rt&&"⏱ "+esc(x.rt)].filter(Boolean).join(" · "); };
 function gcartCard(){ const up=gaUp(); if(!up.length) return null; const card=document.createElement("section"); card.className="ncard nccol gacard"; card.style.setProperty("--nc","#c2255c");
-  card.innerHTML=`<div class="nh"><h2>🎭 공연 보러 가까? · 문화예술회관</h2><button type="button" class="nmore">다 보까? →</button></div>`+
-    up.slice(0,3).map(i=>`<div class="nitem"><div class="nl"><b>${esc(i[3])}</b><div class="na">📅 ${gaWhen(i)} · ${esc(i[4])}</div></div><div class="nr"><a href="${gaView(i)}" target="_blank" rel="noopener">자세히</a></div></div>`).join("")+
-    `<p class="nnote">김천시문화예술회관 공연/전시 일정표 · <a href="${esc(GA.ticket)}" target="_blank" rel="noopener">🎫 예매(티켓링크)</a></p>`;
+  card.innerHTML=`<div class="nh"><h2>🎭 공연 보러 가까?</h2><button type="button" class="nmore">다 보까? →</button></div>`+
+    up.slice(0,3).map(i=>{ const tk=gaTk(i); return `<div class="nitem"><div class="nl garow">${gaPo(i,true)}<div class="gab"><b>${esc(i[3])}</b><div class="na">📅 ${gaWhen(i)} · ${esc(i[4].replace(/ .*$/,""))}</div>${gaX(i).pr?`<div class="na">💳 ${esc(gaX(i).pr)}</div>`:""}</div></div><div class="nr">${tk?`<a href="${esc(tk)}" target="_blank" rel="noopener">🎫 예매</a>`:i[5]?`<a href="${gaView(i)}" target="_blank" rel="noopener">자세히</a>`:""}</div></div>`; }).join("")+
+    `<p class="nnote">문화예술회관 일정표 · 공연예술통합전산망(KOPIS)</p>`;
   card.querySelector(".nmore").addEventListener("click",()=>{ st.evtMode="gcart"; store("kc-evtmode","gcart"); setSec("events"); });
   return card; }
 function renderGcart(){
   loadGcart(); const list=$("list"); list.textContent=""; $("more").hidden=true;
   if(!GA){ $("summary").innerHTML=evtModeBar()+"공연 일정 불러오는 중…"; return; }
   const up=gaUp();
-  $("summary").innerHTML=evtModeBar()+`<span>🎭 <b>김천시문화예술회관 공연·전시</b> · 앞으로 ${up.length}건</span> · <a href="${esc(GA.ticket)}" target="_blank" rel="noopener">🎫 예매(티켓링크)</a><br><small>출처: <a href="${esc(GA.src)}" target="_blank" rel="noopener">김천시문화예술회관 공연/전시 일정표</a> · 일정·예매는 회관 공지를 꼭 확인</small>`;
+  $("summary").innerHTML=evtModeBar()+`<span>🎭 <b>김천 공연·전시</b> · 앞으로 ${up.length}건</span><br><small>출처: <a href="${esc(GA.src)}" target="_blank" rel="noopener">김천시문화예술회관 공연/전시 일정표</a> · 공연예술통합전산망(KOPIS) · 일정·가격은 예매처 공지를 꼭 확인</small>`;
   if(!up.length){ list.innerHTML='<li class="empty">'+mascot("tilt",90)+'<br>올라온 공연 일정이 아직 없어여.</li>'; return; }
   let lastM="";
   up.forEach(i=>{ const m=i[0].slice(0,7); if(m!==lastM){ lastM=m; const h=document.createElement("li"); h.className="evday"; h.textContent=`${+m.slice(5)}월`; list.appendChild(h); }
+    const x=gaX(i), hl=gaHall(i), tk=gaTk(i), info=gaInfo(i);
     const li=document.createElement("li"); li.className="it evt";
-    li.innerHTML=`<div class="nm"><span class="evtime">${gaWhen(i).replace(/ \d.*$/,"")}</span><span class="t"></span></div><div class="ad"><div class="a">🕒 ${esc(i[1]||"")}${i[2]?" ~ "+esc(i[2]):""} · 📍 ${esc(i[4])}</div></div>
-      <div class="links"><a class="route" href="https://map.kakao.com/link/to/${encodeURIComponent(GA_HALL.n)},${GA_HALL.lat},${GA_HALL.lng}" target="_blank" rel="noopener">📍 길찾기</a><a href="${gaView(i)}" target="_blank" rel="noopener">공연 안내</a><a href="${esc(GA.ticket)}" target="_blank" rel="noopener">🎫 예매</a></div>`;
+    li.innerHTML=`<div class="garow">${gaPo(i,true)}<div class="gab"><div class="nm"><span class="evtime">${gaWhen(i).replace(/ \d.*$/,"")}</span><span class="t"></span></div><div class="ad"><div class="a">🕒 ${esc(gaTimes(i))} · 📍 ${esc(i[4])}</div>${info?`<div class="a">${info}</div>`:""}</div></div></div>
+      <div class="links"><a class="route" href="https://map.kakao.com/link/to/${encodeURIComponent(hl.n)},${hl.lat},${hl.lng}" target="_blank" rel="noopener">📍 길찾기</a>${i[5]?`<a href="${gaView(i)}" target="_blank" rel="noopener">공연 안내</a>`:""}${tk?`<a href="${esc(tk)}" target="_blank" rel="noopener">🎫 예매</a>`:""}${x.nv?`<a href="${esc(x.nv)}" target="_blank" rel="noopener">네이버 예약</a>`:""}</div>`;
     li.querySelector(".t").textContent=i[3]; list.appendChild(li); });
 }
 // ---------- 🏐 한국도로공사 하이패스 배구단 일정(volley.json — 한국배구연맹 공식 일정) ----------
