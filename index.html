@@ -806,7 +806,7 @@ function nbRefresh(){ clearTimeout(nbRefresh.t); nbRefresh.t=setTimeout(()=>{ $(
 const LIFE_MENUS=[["kid","아이 아플 때"],["hosp","병원"],["dent","치과"],["pharm","약국"],["cold","한파쉼터"],["heat","무더위쉼터"],["shelter","민방위 대피시설"],["aed","자동심장충격기(AED)"],["sports","체육시설"],["vet","동물병원"],["wifi","무료 와이파이"],["office","관공서"],["kiosk","무인민원발급기"],["toilet","공중화장실"],["park","공원"],["parking","주차장"],["repair","자동차 정비소"],["ev","전기차 충전소"]];
 const LIFE_GROUPS=[["med","의료",["kid","hosp","pharm","dent"]],["safe","안전",["aed",...((m=>m>=5&&m<=9)(new Date().getMonth()+1)?["heat","cold"]:["cold","heat"]),"shelter"]],["daily","생활",["toilet","parking","kiosk","office","ev","repair","park","sports","vet","wifi"]]];
 const HRS_MENUS=["kid","pharm","hosp","dent","office","kiosk","aed"];
-const HER_MENUS=[["heritage","문화재"],["kids","아이랑 갈 데"],["movie","영화관"],["tour12","관광지"],["tour14","문화시설"],["tour28","레포츠·캠핑"]];
+const HER_MENUS=[["kids","아이랑 갈 데"],["movie","영화관"],["tour12","관광지"],["tour14","문화시설"],["tour28","레포츠·캠핑"],["heritage","문화재"]];
 const ymdKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const dayIdx=d=> HOLIDAYS.includes(ymdKey(d)) ? 7 : (d.getDay()+6)%7;   // 0=월 … 6=일, 7=공휴일
 const fmtH=s=>s?`${s.slice(0,2)}:${s.slice(2)}`:"";
@@ -870,7 +870,7 @@ const SECS={
   good:{menu:"good",sub:()=>`김천시 지정 착한가격업소 ${D.good.length}곳 · 김천사랑카드 가맹 ${D.good.filter(g=>g[8].length).length}곳`},
   life:{menu:"pharm",sub:()=>`지금 문 연 약국 ${R.filter(r=>r.pharm&&pharmState(r).open).length}곳`},
   events:{menu:"events",sub:()=>st.evtMode==="gcart"?"🎭 김천 공연·전시 일정 · 문화예술회관·시립문화회관":st.evtMode==="volley"?"🏐 김천 한국도로공사 하이패스 배구단 경기 일정":st.evtMode==="fest"?"전국 축제 · 한국관광공사 행사정보":EVT?`오늘부터 김천 행사 ${EVT.items.filter(i=>i[0]>=ymdKey(new Date())&&evtPublic(i)).length}건 · 김천시 누리집 ‘주간행사계획’`:"이번 주 김천 행사 · 김천시 누리집 ‘주간행사계획’"},
-  her:{menu:"heritage",sub:()=>`문화재 ${D.her.length}건 · 관광지 ${D.tour.length}곳 · 아이랑 갈 데 ${R.filter(r=>r.menu==="kids").length}곳`}
+  her:{menu:"kids",sub:()=>`아이랑 갈 데 ${R.filter(r=>r.menu==="kids").length}곳 · 관광지 ${D.tour.length}곳 · 문화재 ${D.her.length}건`}
 };
 D.menus=D.menus.filter(m=>m[0]!=="good"&&m[0]!=="heritage");
 const LIFE_KEYS=["pharm","toilet","ev","shelter","office","hos","kio","park","rest","repair","park2","kid","aed","vet","wifi","sport"];
@@ -944,7 +944,7 @@ function buildSubs(){
 function setSec(sec){
   if(st.sec!==sec) stat("t_"+sec);
   st.sec=sec; store("kc-sec",sec); st.sub=null; st.shown=60;
-  st.menu = sec==="card" ? st.cardMenu : sec==="life" ? (st.lifeMenu||"pharm") : sec==="her" ? (st.herMenu||"heritage") : SECS[sec].menu;
+  st.menu = sec==="card" ? st.cardMenu : sec==="life" ? (st.lifeMenu||"pharm") : sec==="her" ? (st.herMenu||"kids") : SECS[sec].menu;
   if(st.view==="map") lastKey=null;
   sync(); render(); window.scrollTo({top:0});
 }
@@ -1541,7 +1541,7 @@ function render(){
 const sm=load("kc-menu"); if(sm && (sm==="good"||D.menus.some(m=>m[0]===sm))){ st.cardMenu=sm; }
 { const lm=load("kc-lmenu"); if(LIFE_MENUS.some(m=>m[0]===lm)) st.lifeMenu=lm; const hm=load("kc-hmenu"); if(HER_MENUS.some(m=>m[0]===hm)) st.herMenu=hm; }
 // 앱을 새로 열면 늘 '내 주변'부터 (예전엔 마지막 탭을 기억했음). 세부 메뉴(약국·병원 등) 선택은 그대로 기억
-const ss=location.hash.includes("sec=")?load("kc-sec"):null; if(ss==="good"){ st.sec="card"; st.menu=st.cardMenu="good"; } else if(ss && SECS[ss]){ st.sec=ss; st.menu= ss==="card" ? st.cardMenu : ss==="life" ? (st.lifeMenu||"pharm") : ss==="her" ? (st.herMenu||"heritage") : SECS[ss].menu; }
+const ss=location.hash.includes("sec=")?load("kc-sec"):null; if(ss==="good"){ st.sec="card"; st.menu=st.cardMenu="good"; } else if(ss && SECS[ss]){ st.sec=ss; st.menu= ss==="card" ? st.cardMenu : ss==="life" ? (st.lifeMenu||"pharm") : ss==="her" ? (st.herMenu||"kids") : SECS[ss].menu; }
 const sb=load("kc-base"); if(sb&&sb.startsWith("n:")&&NB[sb.slice(2)]){ sel.value=sb; const c=NB[sb.slice(2)].c; st.base={lat:c[0],lng:c[1]}; $("status").textContent=`${sb.slice(2)}${NB[sb.slice(2)].dg?" 구청 부근":" 시내"} 기준 직선거리입니다.`; } else if(sb==="gps"){ let lp=null; try{ lp=JSON.parse(load("kc-lastpos")||"null"); }catch(e){}
   if(INAPP&&lp){ oG.hidden=false; sel.value="gps"; st.base={lat:lp.lat,lng:lp.lng}; $("status").textContent="지난번 내 위치로 보여드려여 · 새로 찾으려면 ‘내 위치’"; }
   else setTimeout(()=>$("gps").click(),300); } else if(sb && sb.startsWith("e:") && D.cen[sb.slice(2)]){sel.value=sb; const c=D.cen[sb.slice(2)]; st.base={lat:c[0],lng:c[1]}; $("status").textContent=`${sb.slice(2)} 중심 기준 직선거리입니다.`;}
