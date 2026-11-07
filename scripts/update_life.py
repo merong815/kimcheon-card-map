@@ -765,25 +765,21 @@ def movie(cx):
 
 
 def movies():
-    """요즘 영화 뭐 보노? — 영화진흥위원회(KOBIS) 일별 박스오피스, 경상북도 지역(어제) → movies.json"""
+    """요즘 영화 뭐 보노? — 영화진흥위원회(KOBIS) 일별 박스오피스, 전국(어제) → movies.json"""
     if not KOBIS:
         print("[movies] KOBIS_KEY 없음 → 건너뜀")
         return
     base = "http://www.kobis.or.kr/kobisopenapi/webservice/rest"
-    codes = get(f"{base}/code/searchCodeList.json?key={q(KOBIS)}&comCode=0105000000")
-    area = next((c for c in codes["codes"] if re.search(r"경상북도|경북", c.get("korNm", ""))), None)
-    if not area:
-        raise RuntimeError("경북 지역코드를 못 찾음")
     for back in (1, 2, 3):   # 어제 자료가 아직 없으면 그 전날
         day = (datetime.now(KST) - timedelta(days=back)).strftime("%Y%m%d")
-        d = get(f"{base}/boxoffice/searchDailyBoxOfficeList.json?key={q(KOBIS)}&targetDt={day}&wideAreaCd={area['fullCd']}")
+        d = get(f"{base}/boxoffice/searchDailyBoxOfficeList.json?key={q(KOBIS)}&targetDt={day}")
         lst = d.get("boxOfficeResult", {}).get("dailyBoxOfficeList", [])
         if lst:
             break
     if not lst:
         raise RuntimeError("박스오피스 자료 없음")
     items = [[int(x["rank"]), x["movieNm"], x.get("openDt", ""), int(x.get("audiCnt") or 0), x.get("rankOldAndNew", "")] for x in lst]
-    out = {"date": day, "area": area.get("korNm", "경상북도"), "items": items}
+    out = {"date": day, "area": "전국", "items": items}
     try:
         old = json.load(open("movies.json", encoding="utf-8"))
         if {k: old.get(k) for k in out} == out:
