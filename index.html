@@ -1165,9 +1165,12 @@ function renderNear(){
   loadEvents();
   if(EVT){ const td=ymdKey(now), tm=ymdKey(new Date(now.getTime()+864e5)); let day=td, ev=EVT.items.filter(i=>i[0]===td&&evtPublic(i));
     if(!ev.length){ day=tm; ev=EVT.items.filter(i=>i[0]===tm&&evtPublic(i)); }
+    if(!ev.length){ const nx=EVT.items.find(i=>i[0]>tm&&evtPublic(i)); if(nx){ day=nx[0]; ev=EVT.items.filter(i=>i[0]===day&&evtPublic(i)); } }
     if(ev.length){ const card=document.createElement("section"); card.className="ncard evcard";
-      card.innerHTML=`<div class="nh"><h2>📅 ${day===td?"오늘":"내일"} 김천에선</h2><button type="button" class="nmore">다 보까? →</button></div>`+ev.slice(0,4).map(i=>`<div class="nitem"><div class="nl"><b>${esc(i[2])}</b>${i[3]?`<div class="na">📍 ${esc(i[3])}</div>`:""}</div><div class="nr"><span class="nd">${esc(i[1]||"종일")}</span></div></div>`).join("")+(ev.length>4?`<p class="nnote">외 ${ev.length-4}건</p>`:"");
-      card.querySelector(".nmore").addEventListener("click",()=>setSec("events")); grid.appendChild(card); } }
+      card.innerHTML=`<div class="nh"><h2>📅 ${day===td?"오늘":day===tm?"내일":`${+day.slice(5,7)}.${+day.slice(8)}(${"일월화수목금토"[new Date(day+"T12:00:00+09:00").getDay()]})`} 김천에선</h2><button type="button" class="nmore">다 보까? →</button></div>`+ev.slice(0,4).map(i=>`<div class="nitem"><div class="nl"><b>${esc(i[2])}</b>${i[3]?`<div class="na">📍 ${esc(i[3])}</div>`:""}</div><div class="nr"><span class="nd">${esc(i[1]||"종일")}</span></div></div>`).join("")+(ev.length>4?`<p class="nnote">외 ${ev.length-4}건</p>`:"");
+      card.querySelector(".nmore").addEventListener("click",()=>{ st.evtMode="kc"; store("kc-evtmode","kc"); setSec("events"); });
+      // 접힌 칸 뒤로 숨지 않게 '아이랑 어데 가꼬?' 바로 앞에
+      const kc=[...grid.children].find(c=>/아이랑 어데 가꼬/.test(c.textContent)); if(kc) grid.insertBefore(card,kc); else grid.appendChild(card); } }
   box.appendChild(grid);
   const fyi=document.createElement("p"); fyi.className="status"; fyi.textContent=`기준: ${dayIdx(now)===7?"공휴일":DAYN[dayIdx(now)]+"요일"} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")} · 직선거리`; box.appendChild(fyi);
 }
