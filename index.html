@@ -1230,7 +1230,7 @@ function gcartCard(){ const up=gaUp(); if(!up.length) return null; const card=do
 // 🚗 이웃 시군 공연(perf.json — KOPIS, 김천시청에서 80km 안, 60일치)
 let PF=null;
 function loadPerf(){ if(loadPerf.done) return; loadPerf.done=true;
-  fetch("perf.json?t="+Math.floor(Date.now()/3600000),{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.items){ PF=j; if(st.sec==="events") render(); } }).catch(()=>{}); }
+  fetch("perf.json?t="+Math.floor(Date.now()/3600000),{cache:"no-cache"}).then(r=>r.ok?r.json():null).catch(()=>null).then(j=>{ PF=j&&j.items?j:{items:[],fac:{},fail:1}; if(st.sec==="events") render(); }); }
 st.gaNb=load("kc-ganb")==="1";
 const pfMd=s=>`${+s.slice(5,7)}.${+s.slice(8)}`;
 const pfWd=s=>"일월화수목금토"[new Date(s+"T12:00:00+09:00").getDay()];
@@ -1253,6 +1253,7 @@ function renderGcart(){
   let sum=evtModeBar()+`<span>🎭 <b>${st.gaNb?"김천·이웃 시군 공연":"김천 공연·전시"}</b> · 앞으로 ${xs.length}건</span><br>`+
     tg("ganb",st.gaNb,"🚗 구미·대구·대전 등 80km 안까지")+" "+(st.gaNb?tg("ganokc",st.gaNoKc,"김천 빼고")+" ":"")+tg("gakid",st.gaKid,"👶 아이랑 볼 만한 것만");
   if(groups) sum+=`<div class="rgcnts">${groups.map(g=>`<button type="button" class="rgjump" data-g="${esc(g)}">📍 ${esc(g)} <b>${won(gcnt[g])}</b>건</button>`).join("")}</div>`;
+  if(st.gaNb&&PF&&PF.fail) sum+=`<div class="note">이웃 시군 공연 자료를 못 받았어여. 잠시 뒤 다시 열어 보세요.</div>`;
   sum+=`<small>출처: <a href="${esc(GA.src)}" target="_blank" rel="noopener">김천시문화예술회관 공연/전시 일정표</a> · 공연예술통합전산망(KOPIS) · 일정·가격은 예매처 공지를 꼭 확인</small>`;
   $("summary").innerHTML=sum;
   $("ganb").addEventListener("change",e=>{ st.gaNb=e.target.checked; store("kc-ganb",st.gaNb?"1":"0"); st.shown=60; renderGcart(); });
