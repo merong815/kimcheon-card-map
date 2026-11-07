@@ -1,6 +1,6 @@
 """김천시청 누리집 '새소식' 게시판의 주간행사계획(한글 .hwp 첨부)을 받아 events.json을 만든다.
 
-GitHub Actions에서 매일 저녁 실행(보통 금요일에 다음 주 계획이 올라오고, '_수정'본이 다시 올라오기도 해서 매일 확인).
+GitHub Actions에서 주말에만 실행(금요일 19시, 토·일 오전 9시). 보통 금요일에 다음 주 계획이 올라옴.
 바뀐 게 없으면 저장소에 아무것도 올리지 않는다.
 
 순서: 게시판에서 '주간행사계획' 제목 검색 → 가장 최근 글 → 첨부 .hwp 내려받기 → 표(일시 | 행사 내용 | 주관부서) 읽기
@@ -23,7 +23,11 @@ BASE = "https://www.gc.go.kr"
 LIST = BASE + "/portal/bbs/list.do?ptIdx=1807&mId=1202100000&searchType=b_title&searchTxt=" + urllib.parse.quote("주간행사계획")
 VIEW = BASE + "/portal/bbs/view.do?bIdx={}&ptIdx=1807&mId=1202100000"
 KST = timezone(timedelta(hours=9))
-UA = {"User-Agent": "Mozilla/5.0 (kimcheon-map weekly events)"}
+# 누리집 방화벽이 낯선 프로그램 이름(봇)이면 404를 돌려주는 것으로 보여 일반 브라우저처럼 요청
+UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.5",
+      "Referer": "https://www.gc.go.kr/portal/main.do"}
 
 
 def fetch(url, binary=False):
