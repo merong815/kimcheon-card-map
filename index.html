@@ -311,6 +311,10 @@ li.it.fest .thumb{float:right;width:96px;height:72px;object-fit:cover;border-rad
 .rgjump b{color:var(--accent)}
 li.rghead{list-style:none;font-family:"Jua",var(--f-body,system-ui),sans-serif;font-size:19px;padding:14px 4px 4px;border-bottom:2px solid var(--accent);color:var(--ink);scroll-margin-top:140px}
 li.rghead b{color:var(--accent)}
+.vbmain{padding:4px 2px 6px}.vbwhen{font-size:15px;color:#1864ab;font-weight:700}.vbvs{font-size:21px;margin:2px 0 4px}.vbvs b{font-weight:800}
+.tag.vbhome{background:#1864ab;color:#fff;font-weight:700}.tag.vbaway{background:#e7f5ff;color:#1864ab;border:1px solid #a5d8ff}
+.vbbtn{flex-direction:row;flex-wrap:wrap;justify-content:flex-start;margin:2px 0 4px}
+li.it.vb.past{opacity:.55}li.it.vb.next{outline:2.5px solid #1864ab;outline-offset:-2px;border-radius:12px}
 .mvtop{margin:4px 0 2px;padding:0;list-style:none;font-size:16.5px;line-height:1.75}.mvtop .mvn{display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;border-radius:50%;background:#7048e8;color:#fff;font-size:13px;font-weight:700;margin-right:8px}.mvtop b{font-weight:700}
 .mvsum{margin-top:6px;font-size:14.5px;line-height:1.6}
 .foldbtn{background:none;border:1px solid var(--line);border-radius:99px;padding:7px 13px;font-size:14.5px;color:var(--muted);cursor:pointer;font-family:inherit}
@@ -482,6 +486,7 @@ body.compact .ctlopen{display:inline-block;position:absolute;right:12px;top:6px;
     <p>공중화장실: 공공데이터포털 전국공중화장실표준데이터(김천시 등록분, 데이터 기준일 2025.6.30). 개방화장실은 민간·공공 건물의 화장실을 개방한 곳입니다.</p>
     <p>아이랑 갈 데: 키즈카페·실내 놀이시설은 행정안전부 전국어린이놀이시설정보(놀이제공영업소, 운영 중인 곳, 김천·구미·칠곡·상주·성주·대구), 체험학습장·박물관·도서관·캠핑장 등은 카카오 장소 정보(김천), 공원은 도시공원 자료입니다. 매일 자동 갱신되며 운영 여부·이용 연령은 가기 전에 확인하세요.</p>
     <p>영화관: 김천사랑카드 가맹점 목록·카카오 장소 정보. 상영시간표는 공개된 자료가 없어 ‘🎬 상영시간표’를 누르면 휴대폰에선 네이버 장소의 영화(시간표·예매) 화면, 컴퓨터에선 구글 검색의 그 극장 상영시간표로 연결됩니다.</p>
+    <p>배구: 한국도로공사 하이패스 배구단 경기 일정은 한국배구연맹(KOVO) 공식 홈페이지 일정 기준입니다. 경기 시간은 방송 편성 등으로 바뀔 수 있습니다.</p>
     <p>요즘 영화 뭐 보노?: 영화진흥위원회 영화관입장권 통합전산망(KOBIS) 전국 일별 박스오피스(전날 기준, 매일 갱신). 김천 극장별 상영작이 아니라 전국 관객 순위입니다.</p>
     <p>전국 축제: 한국관광공사 TourAPI 행사정보(매일 자동 갱신, 사진 출처 한국관광공사). 일정은 주최 측 사정으로 바뀔 수 있습니다.</p>
     <p id="lifeasof"></p>
@@ -856,7 +861,7 @@ const SECS={
   card:{sub:()=>`기름 어데가 싸노? 주유 할인 비교 · 착한가격업소 ${D.good.length}곳 · 김천사랑카드 가맹점 ${won(D.rows.length)}곳`},
   good:{menu:"good",sub:()=>`김천시 지정 착한가격업소 ${D.good.length}곳 · 김천사랑카드 가맹 ${D.good.filter(g=>g[8].length).length}곳`},
   life:{menu:"pharm",sub:()=>`지금 문 연 약국 ${R.filter(r=>r.pharm&&pharmState(r).open).length}곳`},
-  events:{menu:"events",sub:()=>st.evtMode==="fest"?"전국 축제 · 한국관광공사 행사정보":EVT?`이번 주 김천 행사 ${EVT.items.filter(evtPublic).length}건 · 김천시 누리집 ‘주간행사계획’`:"이번 주 김천 행사 · 김천시 누리집 ‘주간행사계획’"},
+  events:{menu:"events",sub:()=>st.evtMode==="volley"?"🏐 김천 한국도로공사 하이패스 배구단 경기 일정":st.evtMode==="fest"?"전국 축제 · 한국관광공사 행사정보":EVT?`이번 주 김천 행사 ${EVT.items.filter(evtPublic).length}건 · 김천시 누리집 ‘주간행사계획’`:"이번 주 김천 행사 · 김천시 누리집 ‘주간행사계획’"},
   her:{menu:"heritage",sub:()=>`문화재 ${D.her.length}건 · 관광지 ${D.tour.length}곳 · 아이랑 갈 데 ${R.filter(r=>r.menu==="kids").length}곳`}
 };
 D.menus=D.menus.filter(m=>m[0]!=="good"&&m[0]!=="heritage");
@@ -947,7 +952,7 @@ st.kcOff=load("kc-kcoff")==="1";
 
 $("memonly").addEventListener("change",e=>{ st.memOnly=e.target.checked; store("kc-memonly",st.memOnly?"1":"0"); st.shown=60; if(st.view==="map") lastKey=null; render(); });
 $("paperonly").addEventListener("change",e=>{ st.paperOnly=e.target.checked; store("kc-paperonly",st.paperOnly?"1":"0"); st.shown=60; if(st.view==="map") lastKey=null; render(); });
-st.evtMode=load("kc-evtmode")==="fest"?"fest":"kc";
+st.evtMode=["fest","volley"].includes(load("kc-evtmode"))?load("kc-evtmode"):"kc";
 st.paperOnly=load("kc-paperonly")==="1"; $("paperonly").checked=st.paperOnly;
 $("cardonly2").addEventListener("change",e=>{ st.cardOnly2=e.target.checked; store("kc-cardonly2",st.cardOnly2?"1":"0"); st.shown=60; if(st.view==="map") lastKey=null; render(); });
 st.cardOnly2=load("kc-cardonly2")==="1"; $("cardonly2").checked=st.cardOnly2;
@@ -1147,10 +1152,13 @@ function renderNear(){
       `<p class="nnote">${+d.slice(4,6)}.${+d.slice(6)} ${esc((MVT.area||"전국").replace("경상북도","경북"))} 관객 많은 순(영화진흥위원회) · 김천 극장 상영 여부·시간은 ‘영화 보자’에서 확인</p>`;
     card.querySelector(".nmore").addEventListener("click",()=>{ st.herMenu="movie"; setSec("her"); });
     const kc=[...grid.children].find(c=>/아이랑 어데 가꼬/.test(c.textContent)); if(kc&&kc.nextSibling) grid.insertBefore(card,kc.nextSibling); else grid.appendChild(card); }
+  loadVolley(); { const vc=volleyCard(); if(vc){ const g=vbNext(); const soon=g&&g[3]&&(vbStart(g)-Date.now())<2*864e5;
+      const cs=[...grid.children]; const at=soon ? cs.find(c=>/자동심장충격기/.test(c.textContent)) : (cs.find(c=>c.classList.contains("mvcard"))||cs.find(c=>/아이랑 어데 가꼬/.test(c.textContent)));
+      if(at&&at.nextSibling) grid.insertBefore(vc,at.nextSibling); else grid.appendChild(vc); } }
   if(FEEDBACK_URL){ loadBus(); const bc=busCard(false); const cards=[...grid.children]; const ph=cards.find(c=>/자동심장충격기/.test(c.textContent))||cards.find(c=>/약 무긋나/.test(c.textContent)); if(ph&&ph.nextSibling) grid.insertBefore(bc,ph.nextSibling); else grid.appendChild(bc); }
   const cardsAll=[...grid.children];
   // 처음엔 '아이랑 어데 가꼬?'·'요즘 영화'까지 보이고 나머지는 접어 둠
-  const NV=Math.max(7, cardsAll.findIndex(c=>c.classList.contains("mvcard"))+1, cardsAll.findIndex(c=>/아이랑 어데 가꼬/.test(c.textContent))+1);
+  const NV=Math.max(7, cardsAll.findIndex(c=>c.classList.contains("mvcard"))+1, cardsAll.findIndex(c=>c.classList.contains("vbcard"))+1, cardsAll.findIndex(c=>/아이랑 어데 가꼬/.test(c.textContent))+1);
   if(!st.nearAll&&cardsAll.length>NV){ cardsAll.slice(NV).forEach(c=>c.hidden=true);
     const mb=document.createElement("button"); mb.type="button"; mb.className="btn nearall"; mb.textContent=`다른 것도 보기 (${cardsAll.length-NV}개 더: 주차장·정비소·충전소·공원 등) ▾`;
     mb.addEventListener("click",()=>{ st.nearAll=true; cardsAll.forEach(c=>c.hidden=false); mb.remove(); }); grid.after(mb); setTimeout(()=>grid.after(mb),0); }
@@ -1185,11 +1193,48 @@ const evtPublic=i=>!ADMIN_RE.test(i[2]);
 let MVT=null;
 function loadMovies(){ if(loadMovies.done) return; loadMovies.done=true;
   fetch("movies.json?t="+Math.floor(Date.now()/3600000),{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.items){ MVT=j; if(st.sec==="near"||(st.sec==="her"&&st.menu==="movie")) render(); } }).catch(()=>{}); }
+// ---------- 🏐 한국도로공사 하이패스 배구단 일정(volley.json — 한국배구연맹 공식 일정) ----------
+let VB=null;
+function loadVolley(){ if(loadVolley.done) return; loadVolley.done=true;
+  fetch("volley.json?t="+Math.floor(Date.now()/3600000),{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.games){ VB=j; if(st.sec==="near"||st.sec==="events") render(); } }).catch(()=>{}); }
+const VB_CITY={"서울장충체육관":"서울","숲 스타디움":"광주","대전충무체육관":"대전","수원체육관":"수원","화성종합실내체육관":"화성","인천삼산월드체육관":"인천","김천실내체육관":"김천"};
+const vbWd=d=>"일월화수목금토"[new Date(d+"T12:00:00+09:00").getDay()];
+const vbWhen=g=>`${+g[0].slice(5,7)}.${+g[0].slice(8)}(${vbWd(g[0])}) ${g[1]}`;
+const vbStart=g=>Date.parse(g[0]+"T"+g[1]+":00+09:00");
+const vbDday=g=>{ const a=new Date(ymdKey(new Date())+"T00:00:00+09:00"), b=new Date(g[0]+"T00:00:00+09:00"); const n=Math.round((b-a)/864e5); return n===0?"오늘!":n===1?"내일":`D-${n}`; };
+const vbPlace=g=>g[3]?'<span class="tag vbhome">🏠 김천 홈경기</span>':`<span class="tag vbaway">✈️ 원정 · ${esc(VB_CITY[g[4]]||g[4])}</span>`;
+const vbRes=g=>{ if(!g[6]) return ""; const [a,b]=g[6].split(":").map(Number); return `<span class="tag ${a>b?"op":"cl"}">${a}:${b} ${a>b?"승":"패"}</span>`; };
+function vbNext(){ if(!VB) return null; const now=Date.now(); return VB.games.find(g=>vbStart(g)+2.5*3600e3>now)||null; }
+function volleyCard(){ const g=vbNext(); if(!g) return null; const card=document.createElement("section"); card.className="ncard nccol vbcard"; card.style.setProperty("--nc","#1864ab");
+  const live=Date.now()>=vbStart(g); const nh=VB.games.find(x=>x[3]&&vbStart(x)>vbStart(g));
+  card.innerHTML=`<div class="nh"><h2>🏐 배구 보러 가까?</h2><button type="button" class="nmore">일정 다 보까? →</button></div>
+    <div class="vbmain"><div class="vbwhen">${live?"지금 경기 중!":vbDday(g)} · ${vbWhen(g)}</div><div class="vbvs">한국도로공사 <small>vs</small> <b>${esc(g[2])}</b></div><div>${vbPlace(g)} <small>${esc(g[4])}</small></div></div>
+    ${g[3]?`<div class="nr vbbtn"><a href="https://map.kakao.com/link/to/${encodeURIComponent(VB.home.n)},${VB.home.lat},${VB.home.lng}" target="_blank" rel="noopener">📍 체육관 길찾기</a><a href="${esc(VB.src)}" target="_blank" rel="noopener">🎫 예매·중계</a></div>`
+          :`<div class="nr vbbtn"><a href="${esc(VB.src)}" target="_blank" rel="noopener">📺 중계·결과</a></div>${nh?`<p class="nnote">다음 김천 홈경기: ${vbWhen(nh)} vs ${esc(nh[2])}</p>`:""}`}
+    <p class="nnote">한국배구연맹 공식 일정 · 시간은 방송 사정으로 바뀔 수 있어여</p>`;
+  card.querySelector(".nmore").addEventListener("click",()=>{ st.evtMode="volley"; store("kc-evtmode","volley"); setSec("events"); });
+  return card; }
+function renderVolley(){
+  loadVolley(); const list=$("list"); list.textContent=""; $("more").hidden=true;
+  if(!VB){ $("summary").innerHTML=evtModeBar()+"배구 일정 불러오는 중…"; return; }
+  const now=Date.now(), homeOnly=!!st.vbHome; let gs=VB.games.filter(g=>!homeOnly||g[3]);
+  const done=VB.games.filter(g=>g[6]), w=done.filter(g=>{const [a,b]=g[6].split(":").map(Number); return a>b;}).length;
+  $("summary").innerHTML=evtModeBar()+`<span>🏐 <b>${esc(VB.team)}</b> ${esc(VB.season)} · ${VB.games.length}경기(홈 ${VB.games.filter(g=>g[3]).length})${done.length?` · ${done.length}전 ${w}승 ${done.length-w}패`:""}</span> <label class="toggle"><input type="checkbox" id="vbhome" ${homeOnly?"checked":""}> 🏠 김천 홈경기만</label><br><small>출처: 한국배구연맹(KOVO) 공식 일정 · 경기 결과는 일정 자료를 새로 받을 때 반영돼여</small>`;
+  $("vbhome").addEventListener("change",e=>{ st.vbHome=e.target.checked; renderVolley(); });
+  let firstNext=null;
+  gs.forEach(g=>{ const past=vbStart(g)+2.5*3600e3<now; const li=document.createElement("li"); li.className="it vb"+(past?" past":"");
+    if(!past&&!firstNext){ firstNext=li; li.classList.add("next"); }
+    li.innerHTML=`<div class="nm"><span class="t"></span>${vbPlace(g)}${past?vbRes(g)||'<span class="tag loc">경기 끝</span>':`<span class="tag tf">${vbDday(g)}</span>`}</div>
+      <div class="ad"><div class="a"></div><div class="alias">${g[5]}라운드 · ${esc(g[4])}</div></div>
+      ${g[3]&&!past?`<div class="links"><a class="route" href="https://map.kakao.com/link/to/${encodeURIComponent(VB.home.n)},${VB.home.lat},${VB.home.lng}" target="_blank" rel="noopener">📍 길찾기</a><a href="${esc(VB.src)}" target="_blank" rel="noopener">🎫 예매·중계</a></div>`:""}`;
+    li.querySelector(".t").textContent=`${vbWhen(g)} vs ${g[2]}`; li.querySelector(".a").textContent=g[3]?"김천실내체육관 (운동장길 1)":"원정 경기"; list.appendChild(li); });
+  if(firstNext&&!renderVolley.scrolled){ renderVolley.scrolled=true; setTimeout(()=>{ const c=document.querySelector(".ctl"); window.scrollTo({top:firstNext.getBoundingClientRect().top+scrollY-(c?c.getBoundingClientRect().height:0)-60}); },60); }
+}
 // ---------- 전국 축제(한국관광공사 TourAPI 행사정보, 매일 갱신 fest.json) ----------
 let FEST=null;
 function loadFest(){ if(loadFest.done) return; loadFest.done=true;
   fetch("fest.json?t="+Math.floor(Date.now()/3600000),{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.items){ FEST=j; if(st.sec==="events") render(); } }).catch(()=>{}); }
-const evtModeBar=()=>`<div class="seg evtseg" role="group" aria-label="행사 종류"><button type="button" data-em="kc" aria-pressed="${st.evtMode!=="fest"}">📅 이번 주 김천</button><button type="button" data-em="fest" aria-pressed="${st.evtMode==="fest"}">🎪 전국 축제</button></div>`;
+const evtModeBar=()=>`<div class="seg evtseg" role="group" aria-label="행사 종류"><button type="button" data-em="kc" aria-pressed="${st.evtMode!=="fest"}">📅 이번 주 김천</button><button type="button" data-em="fest" aria-pressed="${st.evtMode==="fest"}">🎪 전국 축제</button><button type="button" data-em="volley" aria-pressed="${st.evtMode==="volley"}">🏐 배구</button></div>`;
 document.addEventListener("click",e=>{ const b=e.target.closest(".evtseg [data-em]"); if(!b) return; st.evtMode=b.dataset.em; store("kc-evtmode",st.evtMode); st.shown=60; $("secsub").textContent=SECS.events.sub(); render(); });
 const festRg=a=>{ a=a||""; const m=a.match(/(김천시|구미시|칠곡군|상주시|성주군)/); if(m) return m[1].slice(0,2); if(/^대구/.test(a)) return "대구";
   const s=(a.split(" ")[0]||""); const S={"경상북도":"경북","경상남도":"경남","충청북도":"충북","충청남도":"충남","전라북도":"전북","전북특별자치도":"전북","전라남도":"전남","경기도":"경기","강원도":"강원","강원특별자치도":"강원","제주특별자치도":"제주","서울특별시":"서울","부산광역시":"부산","인천광역시":"인천","광주광역시":"광주","대전광역시":"대전","울산광역시":"울산","세종특별자치시":"세종"};
@@ -1223,6 +1268,7 @@ function renderFest(){
 }
 function renderEvents(){
   if(st.evtMode==="fest"){ renderFest(); return; }
+  if(st.evtMode==="volley"){ renderVolley(); return; }
   loadEvents(); $("more").hidden=true; const list=$("list"); list.textContent="";
   if(!EVT){ $("summary").innerHTML=evtModeBar()+"이번 주 행사 불러오는 중…"; return; }
   const today=ymdKey(new Date()); const all=st.evtAll;
