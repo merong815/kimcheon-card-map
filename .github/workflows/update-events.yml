@@ -27,7 +27,8 @@ jobs:
       - name: 한글 파일 읽기 라이브러리 설치
         run: pip install olefile
       - name: 김천시 누리집에서 주간행사계획 받기
-        run: python scripts/update_events.py
+        # 예약 실행: 다음 주 것을 이미 받았으면 건너뜀 / 손으로 실행: 무조건 다시 받음
+        run: python scripts/update_events.py ${{ github.event_name == 'workflow_dispatch' && '--force' || '' }}
       - name: 저장
         run: |
           git add events.json

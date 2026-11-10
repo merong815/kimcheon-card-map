@@ -16,7 +16,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -35,15 +35,21 @@ jobs:
           KOPIS_KEY: ${{ secrets.KOPIS_KEY }}
         run: python scripts/update_gcart.py
 
+      - name: 이웃 시군(80km 안) 공연 받기(KOPIS)
+        continue-on-error: true
+        env:
+          KOPIS_KEY: ${{ secrets.KOPIS_KEY }}
+        run: python scripts/update_perf.py
+
       - name: 바뀐 자료 저장
         run: |
-          mkdir -p /tmp/o; for f in movies.json gcart.json; do if [ -f "$f" ]; then cp "$f" /tmp/o/; fi; done
+          mkdir -p /tmp/o; for f in movies.json gcart.json perf.json; do if [ -f "$f" ]; then cp "$f" /tmp/o/; fi; done
           git config user.name "movie-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           for i in 1 2 3; do
             git fetch origin main
             git reset --hard origin/main
-            for f in movies.json gcart.json; do if [ -f "/tmp/o/$f" ]; then cp "/tmp/o/$f" .; git add "$f"; fi; done
+            for f in movies.json gcart.json perf.json; do if [ -f "/tmp/o/$f" ]; then cp "/tmp/o/$f" .; git add "$f"; fi; done
             if git diff --cached --quiet; then echo "바뀐 것 없음"; exit 0; fi
             git commit -m "요즘 영화·공연 갱신 $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')"
             if git push; then exit 0; fi

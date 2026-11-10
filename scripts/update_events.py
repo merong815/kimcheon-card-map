@@ -138,27 +138,67 @@ def parse_table(cells, year, start):
     return items
 
 
+def week_of(title):
+    m = re.search(r"\((\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.\s*~\s*(\d{1,2})\.\s*(\d{1,2})\.?\)", title)
+    if not m:
+        return None
+    y = int(m.group(1))
+    start = date(y, int(m.group(2)), int(m.group(3)))
+    end = date(y + (1 if int(m.group(4)) < start.month else 0), int(m.group(4)), int(m.group(5)))
+    return start, end
+
+
+def read_post(bidx, title):
+    wk = week_of(title)
+    if not wk:
+        return None
+    view = fetch(VIEW.format(bidx))
+    fm = re.search(r"fn_egov_downFile\('([0-9a-f]+)','([0-9a-f]+)'\)[^>]*title=\"[^\"]*\.hwp", view)
+    if not fm:
+        return None
+    b = fetch(f"{BASE}/cmm/fms/FileDown.do?atchFileId={fm.group(1)}&fileSn={fm.group(2)}", binary=True)
+    return wk, parse_table(hwp_cells(b), wk[0].year, wk[0])
+
+
 def main():
+    """금요일에 다음 주 계획이 올라와도 이번 주 남은 날이 사라지지 않게, 최근 두 주를 합쳐서 저장(앱은 오늘부터 보여줌)"""
+    # 다음 주 계획을 이미 받아 뒀으면(주말 세 번 중 한 번 성공하면) 그 주말 나머지는 누리집에 묻지 않는다.
+    # 손으로 'Run workflow' 하면 --force가 붙어 무조건 다시 받는다.
+    today = datetime.now(KST).date()
+    next_sun = today + timedelta(days=6 - today.weekday() + (7 if today.weekday() >= 4 else 0))
+    if "--force" not in sys.argv:
+        try:
+            wk = json.load(open("events.json", encoding="utf-8")).get("week") or []
+            if len(wk) == 2 and wk[1] >= next_sun.isoformat():
+                print(f"이미 {wk[1]}까지 받아 둠 → 이번엔 건너뜀")
+                return
+        except (FileNotFoundError, ValueError):
+            pass
     lst = fetch(LIST)
     posts = re.findall(r"goTo\.view\('list','(\d+)'[^>]*>\s*([^<]*?주간행사계획[^<]*?)\s*</a>", lst, re.S)
     if not posts:
         sys.exit("게시판에서 주간행사계획 글을 못 찾았습니다(사이트 구조가 바뀌었거나 접속이 막혔을 수 있음).")
-    bidx, title = posts[0][0], html.unescape(posts[0][1]).strip()
-    m = re.search(r"\((\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.\s*~\s*(\d{1,2})\.\s*(\d{1,2})\.?\)", title)
-    if not m:
-        sys.exit(f"제목에서 기간을 못 읽었습니다: {title}")
-    y = int(m.group(1))
-    start = date(y, int(m.group(2)), int(m.group(3)))
-    end = date(y + (1 if int(m.group(4)) < start.month else 0), int(m.group(4)), int(m.group(5)))
-    view = fetch(VIEW.format(bidx))
-    fm = re.search(r"fn_egov_downFile\('([0-9a-f]+)','([0-9a-f]+)'\)[^>]*title=\"[^\"]*\.hwp", view)
-    if not fm:
-        sys.exit("첨부 .hwp 파일을 못 찾았습니다.")
-    b = fetch(f"{BASE}/cmm/fms/FileDown.do?atchFileId={fm.group(1)}&fileSn={fm.group(2)}", binary=True)
-    items = parse_table(hwp_cells(b), y, start)
+    weeks, items, src = [], [], ""
+    for bidx, title in posts[:2]:
+        title = html.unescape(title).strip()
+        wk = week_of(title)
+        if not wk or wk[1] < today:      # 이미 다 지난 주는 건너뜀
+            continue
+        r = read_post(bidx, title)
+        if not r:
+            continue
+        weeks.append(r[0]); items += r[1]
+        src = src or VIEW.format(bidx)
     if not items:
         sys.exit("표에서 행사를 하나도 못 읽었습니다.")
-    out = {"title": title, "week": [start.isoformat(), end.isoformat()], "src": VIEW.format(bidx), "items": items}
+    seen, merged = set(), []
+    for i in sorted(items, key=lambda x: (x[0], x[1] or "99:99")):
+        k = (i[0], i[1], i[2])
+        if k not in seen:
+            seen.add(k); merged.append(i)
+    start, end = min(w[0] for w in weeks), max(w[1] for w in weeks)
+    out = {"title": f"주간행사계획({start.strftime('%Y. %m. %d.')} ~ {end.strftime('%m. %d.')})", "week": [start.isoformat(), end.isoformat()],
+           "src": src, "items": merged}
     try:
         old = json.load(open("events.json", encoding="utf-8"))
         if {k: old.get(k) for k in out} == out:
@@ -169,7 +209,7 @@ def main():
     out["updated"] = datetime.now(KST).strftime("%Y-%m-%d %H:%M")
     with open("events.json", "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
-    print(f"{title}: 행사 {len(items)}건")
+    print(f"{out['title']}: 행사 {len(merged)}건")
 
 
 if __name__ == "__main__":
