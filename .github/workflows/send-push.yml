@@ -1,16 +1,16 @@
 name: 알림 보내기
-# 한국시간 기준: 월요일 9시쯤 '이번 주 김천 행사', 매일 7시쯤 '오늘 즐겨찾기'
+# 한국시간 기준: 매일 9시쯤 '오늘 김천 행사·배구·공연', 매일 7시쯤 '오늘 즐겨찾기'
 # GitHub 예약 실행은 몇 분 늦을 수 있어서 조금 일찍(8:53, 6:47) 걸어 둠.
 on:
   schedule:
-    - cron: "53 23 * * 0"   # 월 08:53 KST
+    - cron: "53 23 * * *"   # 매일 08:53 KST
     - cron: "47 21 * * *"   # 매일 06:47 KST
   workflow_dispatch:
     inputs:
       mode:
-        description: "weekly(이번 주 행사) 또는 morning(오늘 즐겨찾기)"
+        description: "daily(오늘 김천 행사) 또는 morning(오늘 즐겨찾기)"
         required: true
-        default: "morning"
+        default: "daily"
 
 permissions:
   contents: read
@@ -31,5 +31,5 @@ jobs:
           PUSH_TOKEN: ${{ secrets.PUSH_TOKEN }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then MODE="${{ github.event.inputs.mode }}";
-          elif [ "${{ github.event.schedule }}" = "53 23 * * 0" ]; then MODE=weekly; else MODE=morning; fi
+          elif [ "${{ github.event.schedule }}" = "53 23 * * *" ]; then MODE=daily; else MODE=morning; fi
           python scripts/send_push.py --$MODE
