@@ -95,10 +95,11 @@ def main():
             print("[보낼 알림]", msg["title"], "|", msg["body"].replace("\n", " / "))
             continue
         try:
-            webpush(subscription_info={"endpoint": s["ep"], "keys": {"p256dh": s["p"], "auth": s["a"]}},
+            r = webpush(subscription_info={"endpoint": s["ep"], "keys": {"p256dh": s["p"], "auth": s["a"]}},
                     data=json.dumps(msg, ensure_ascii=False), vapid_private_key=key,
                     vapid_claims={"sub": "https://merong815.github.io"}, ttl=6 * 3600, timeout=30)
             sent += 1
+            print("보냄:", s["ep"].split("/")[2], "응답", getattr(r, "status_code", "?"))   # 알림 서비스 종류만(주소 전체는 안 찍음)
         except WebPushException as e:
             code = getattr(e.response, "status_code", None)
             if code in (404, 410):
