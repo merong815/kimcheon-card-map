@@ -77,7 +77,8 @@ def merge_kopis(items, ks):
     for k in ks:
         d = k["s"].replace(".", "-")
         e = k["e"].replace(".", "-")
-        place = VENUE.get(k["f"], k["f"].replace("김천시", ""))
+        fac = re.sub(r"\s*\(.*?\)", "", k["f"]).strip()   # 상세에선 "김천시립문화회관 (김천시립문화회관)"처럼 옴
+        place = VENUE.get(fac, fac.replace("김천시", "", 1) if fac.startswith("김천시") else fac)
         tms = re.findall(r"\d{1,2}:\d{2}", k["dt"])
         tms = sorted(set(tms), key=tms.index)
         ex = {"k": k["id"], "po": https(k["po"]), "pr": k["pr"], "age": k["age"], "rt": k["rt"], "tm": ", ".join(tms)}

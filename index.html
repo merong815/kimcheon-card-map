@@ -255,6 +255,14 @@ body.big header .wrap,body.big .ctl .wrap,body.big #near,body.big #summary,body.
 .tag.cl{background:var(--line);color:var(--muted)}
 .pin.po{background:var(--accent);width:16px;height:16px;border-radius:4px}
 .pin.pcl{background:var(--muted);opacity:.7}
+.estar{margin-left:auto;flex:none;background:none;border:0;font-size:22px;line-height:1;padding:2px 6px;color:var(--muted);cursor:pointer}
+.estar.on{color:#f59f00}
+.nl .estar{font-size:20px;padding:0 4px;vertical-align:-2px}
+.efcard{border:2px solid #f59f00}
+.efcard .when{font-weight:700;color:#e67700;margin-right:4px}
+.pushbox{margin-top:10px;padding:10px 12px;border:1px dashed var(--line);border-radius:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:14px}
+.pushbox small{flex-basis:100%;color:var(--muted);font-size:12.5px}
+.pushbox.off{opacity:.7}
 .toggle{display:inline-flex;gap:6px;align-items:center;font-size:14px;font-weight:500;background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:6px 12px;cursor:pointer}
 .toggle input{accent-color:var(--accent);width:16px;height:16px}
 .desc.hrs table{border-collapse:collapse;margin-top:4px;font-size:13px}
@@ -499,6 +507,7 @@ body.compact .ctlopen{display:inline-block;position:absolute;right:12px;top:6px;
     <p id="lifeasof"></p>
     
     <p>약국: 국립중앙의료원 전국 약국 정보(2026.11.1 수집). 운영시간은 약국 사정에 따라 다를 수 있으니 방문 전 전화로 확인하세요. 공휴일은 2027년 2월까지 반영했습니다. 공공심야약국(재창·새서울·이연)은 김천시 안내 기준이며, 새서울약국은 약국 공개 자료에 없어 김천시 안내 정보만 표시합니다.</p>
+    <p>즐겨찾기(☆)·알림: 즐겨찾기는 이 기기 안에만 저장됩니다. ‘🔔 알림’을 켜면 알림을 보내려고 이 기기의 알림 주소(브라우저가 만든 무작위 주소)와 즐겨찾기 일정(제목·날짜·장소)만 의견함 시트에 저장하고, 알림을 모두 끄면 바로 지웁니다. 이름·위치·전화번호는 받지 않습니다. 알림은 월요일 9시쯤(이번 주 김천 행사)과 즐겨찾기 있는 날 아침 7시쯤 보내며, 예약 실행이라 몇 분 늦을 수 있습니다.</p>
     <p>거리는 직선거리입니다. 주소로 정한 기준 위치는 가맹점 주소를 이용한 추정이라 실제 위치와 수십~수백 m 다를 수 있습니다.</p>
   </details>
   </div>
@@ -738,10 +747,72 @@ function busCard(full){ const n=full?10:4; const card=document.createElement("se
      !BUS.stops.length ? `<p class="nnote">근처 정류장 정보를 못 받았어여. 잠시 뒤 ${full?"‘↻ 새로’를 눌러":"다시 열어"} 보세여. (국토교통부 정류장 정보는 기준 위치 반경 약 500m)</p>` :
      BUS.stops.slice(0,n).map(s=>{ const a=BUS.arr[s.id]; const cap=full?20:3; return `<div class="nitem"><div class="nl"><b>${esc(s.n)}</b> <small class="busno">정류장 ${esc(String(s.no))}</small><div class="busarr">${a==null?(s.id in BUS.arr?"도착 정보 못 받음":"불러오는 중…"):a.length?a.slice(0,cap).map(x=>`<span class="tag ${x[1]<300?"op":"tf"}">${esc(x[0])}번 ${busMin(x[1])}${x[2]?` · ${x[2]}정거장 전`:""}</span>`).join(" ")+(a.length>cap?` <small>외 ${a.length-cap}대</small>`:""):'<span class="tag loc">곧 오는 버스 없음</span>'}</div></div><div class="nr"><span class="nd">${fmtKm(s.d)}</span><a href="https://map.kakao.com/link/map/${encodeURIComponent(s.n)},${s.lat},${s.lng}" target="_blank" rel="noopener">지도</a></div></div>`; }).join("")+
      `<p class="nnote">국토교통부 실시간 도착 정보 · ${new Date(BUS.t).toTimeString().slice(0,5)} 기준${full?" · 30초마다 저절로 새로 고쳐여":""} · 같은 이름 정류장은 길 건너편(방향이 달라여)</p>`);
+  if(ok&&BUS.stops.length) card.querySelectorAll(".nitem").forEach((el,i)=>{ const s=BUS.stops[i]; if(s) addStar(el.querySelector(".nl b"),"bs|"+s.c+"|"+s.id,["bs","","",s.n+" ("+s.no+")",`${s.c}|${s.id}|${s.lat}|${s.lng}`,""]); });
   const rf=card.querySelector(".busref"); if(rf) rf.addEventListener("click",()=>{ rf.textContent="⏳"; stat("bus"); loadBus(true); });
   const al=card.querySelector(".busall"); if(al) al.addEventListener("click",()=>setSec("bus"));
   return card; }
 setInterval(()=>{ if(st.sec==="bus"&&st.base&&!document.hidden) loadBus(true); },30000);
+
+// ---------- ☆ 즐겨찾기(공연·배구·축제·김천 행사·버스 정류장) — 이 기기에만 저장 ----------
+// 값 = [종류, 시작일, 끝일, 제목, 장소(정류장은 "도시|정류장ID|위도|경도"), 시간]
+let EFAV={}; try{ EFAV=JSON.parse(load("kc-efav")||"{}")||{}; }catch(e){ EFAV={}; }
+const EF_ICON={ga:"🎭",pf:"🎭",vb:"🏐",fe:"🎪",ev:"📅",bs:"🚏"};
+const efOn=k=>!!EFAV[k];
+function efPrune(){ const td=ymdKey(new Date()); let ch=false; for(const k in EFAV){ const m=EFAV[k]; if(m[0]!=="bs"&&(m[2]||m[1])&&(m[2]||m[1])<td){ delete EFAV[k]; ch=true; } } if(ch) store("kc-efav",JSON.stringify(EFAV)); }
+function efToggle(k,meta){ if(EFAV[k]) delete EFAV[k]; else EFAV[k]=meta; store("kc-efav",JSON.stringify(EFAV));
+  toast(EFAV[k]?(meta[0]==="bs"?"★ 즐겨찾는 정류장에 넣었어여. ‘내 주변’·‘버스’ 맨 위에 보여여":"★ 즐겨찾기에 넣었어여. 그날 ‘내 주변’ 맨 위에 떠여"):"즐겨찾기에서 뺐어여"); pushSync(); render(); }
+function addStar(el,k,meta){ if(!el) return; const on=efOn(k); const b=document.createElement("button"); b.type="button"; b.className="estar"+(on?" on":""); b.textContent=on?"★":"☆"; b.title=on?"즐겨찾기 빼기":"즐겨찾기"; b.setAttribute("aria-label",on?"즐겨찾기 빼기":"즐겨찾기"); b.setAttribute("aria-pressed",on);
+  b.addEventListener("click",e=>{ e.preventDefault(); e.stopPropagation(); efToggle(k,meta); }); el.appendChild(b); }
+const d8=s=>s&&s.length===8&&!s.includes("-")?`${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6)}`:s||"";
+const efMd=s=>`${+s.slice(5,7)}.${+s.slice(8)}(${"일월화수목금토"[new Date(s+"T12:00:00+09:00").getDay()]})`;
+// 즐겨찾는 정류장 도착 정보(정류장마다 45초 동안 기억)
+let BUSF={};
+function loadFavBus(){ if(!FEEDBACK_URL) return; Object.values(EFAV).filter(m=>m[0]==="bs").slice(0,4).forEach(m=>{ const [c,id]=String(m[4]).split("|"); const o=BUSF[id];
+  if(o&&(o.busy||Date.now()-o.t<45000)) return; BUSF[id]=Object.assign({},o||{},{busy:true,t:Date.now()});
+  fetch(`${FEEDBACK_URL}?bus=arr&city=${encodeURIComponent(c)}&node=${encodeURIComponent(id)}`).then(r=>r.json()).then(j=>{ BUSF[id]={arr:j&&j.ok?j.arr:null,t:Date.now()}; }).catch(()=>{ BUSF[id]={arr:null,t:Date.now(),err:1}; })
+   .finally(()=>{ if(st.sec==="near"||st.sec==="bus") render(); }); }); }
+const busTags=(a,cap)=>a==null?'<span class="tag tf">불러오는 중…</span>':a.length?a.slice(0,cap).map(x=>`<span class="tag ${x[1]<300?"op":"tf"}">${esc(x[0])}번 ${busMin(x[1])}${x[2]?` · ${x[2]}정거장 전`:""}</span>`).join(" ")+(a.length>cap?` <small>외 ${a.length-cap}대</small>`:""):'<span class="tag loc">곧 오는 버스 없음</span>';
+function favStopsHtml(cap){ const ss=Object.entries(EFAV).filter(([k,m])=>m[0]==="bs"); if(!ss.length) return ""; loadFavBus();
+  return ss.slice(0,4).map(([k,m])=>{ const id=String(m[4]).split("|")[1], o=BUSF[id]; return `<div class="nitem"><div class="nl"><b>🚏 ${esc(m[3])}</b><div class="busarr">${o&&o.err?"도착 정보 못 받음":busTags(o&&!o.busy?o.arr:null,cap)}</div></div></div>`; }).join(""); }
+// 내 주변 맨 위: 오늘·이번 주 즐겨찾기 + 즐겨찾는 정류장
+function favTodayCard(now){ efPrune(); const td=ymdKey(now), wk=ymdKey(new Date(now.getTime()+7*864e5));
+  const ev=Object.values(EFAV).filter(m=>m[0]!=="bs").map(m=>({m,from:m[1],to:m[2]||m[1]})).filter(x=>x.to>=td&&x.from<=wk)
+    .sort((a,b)=>(a.from<td?td:a.from).localeCompare(b.from<td?td:b.from)||String(a.m[5]).localeCompare(String(b.m[5])));
+  const stops=favStopsHtml(st.sec==="bus"?20:4);
+  if(!ev.length&&!stops) return null;
+  const nT=ev.filter(x=>x.from<=td).length;
+  const card=document.createElement("section"); card.className="ncard efcard";
+  card.innerHTML=`<div class="nh"><h2>📌 ${nT?`오늘 내 즐겨찾기 ${nT}건`:"내 즐겨찾기"}</h2></div>`+
+    ev.slice(0,6).map(x=>{ const m=x.m, today=x.from<=td; return `<div class="nitem"><div class="nl"><span class="when">${today?"오늘":efMd(x.from)}</span>${EF_ICON[m[0]]||""} <b>${esc(m[3])}</b><div class="na">${[m[5],m[4]].filter(Boolean).map(esc).join(" · ")}</div></div></div>`; }).join("")+
+    (ev.length?"":`<p class="nnote">이번 주 즐겨찾기한 공연·경기·행사는 없어여. 행사 탭에서 ☆을 눌러 보세여.</p>`)+stops+
+    pushBox();
+  return card; }
+// ---------- 🔔 알림(웹 푸시) — 알림 주소만 의견함 시트에 저장, 끄면 지움 ----------
+const VAPID_PUB="BLgtAOfp-FhvjXb023VgeaigMoh46EUMH5RHeUDx_lmXwhJR-fJ_3F4o2X2tXZfnz_NnzafgJQrBS9lShGCNkko";
+const PUSH_OK=()=>"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window&&!!FEEDBACK_URL;
+let PUSH={w:load("kc-pushw")==="1",m:load("kc-pushm")==="1"};
+const b64u=s=>{ const p="=".repeat((4-s.length%4)%4), b=atob((s+p).replace(/-/g,"+").replace(/_/g,"/")); return Uint8Array.from(b,c=>c.charCodeAt(0)); };
+function pushPayload(sub){ const j=sub.toJSON(); const f=Object.values(EFAV).filter(m=>m[0]!=="bs").slice(0,40).map(m=>m.map(x=>String(x==null?"":x).slice(0,80)));
+  return {push:"sub",ep:j.endpoint,p:j.keys.p256dh,a:j.keys.auth,w:PUSH.w?1:0,m:PUSH.m?1:0,f}; }
+const pushPost=d=>fetch(FEEDBACK_URL,{method:"POST",body:JSON.stringify(d)}).then(r=>r.json()).catch(()=>({ok:false}));
+async function pushSet(kind,on){
+  if(!PUSH_OK()){ toast(/iPhone|iPad/.test(navigator.userAgent)?"아이폰은 사파리에서 ‘홈 화면에 추가’한 뒤 그 아이콘으로 열어야 알림을 받을 수 있어여":"이 브라우저는 알림을 못 받아여. 크롬에서 열어 주세여"); render(); return; }
+  try{ const reg=await navigator.serviceWorker.register("sw.js");
+    if(on&&Notification.permission!=="granted"){ const p=await Notification.requestPermission(); if(p!=="granted"){ toast("알림 허용을 안 눌러서 못 켰어여. 휴대폰 설정 → 알림에서 켤 수 있어여"); render(); return; } }
+    PUSH[kind]=on; store("kc-push"+kind,on?"1":"0");
+    let sub=await reg.pushManager.getSubscription();
+    if(PUSH.w||PUSH.m){ if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUB)});
+      const j=await pushPost(pushPayload(sub)); if(on) stat("push");
+      toast(j.ok?(on?(kind==="w"?"🔔 월요일 아침 9시에 이번 주 김천 행사를 알려 드릴게여":"🔔 즐겨찾기한 날 아침 7시에 알려 드릴게여"):"알림 하나를 껐어여"):"알림 신청을 못 보냈어여 😅 잠시 뒤 다시 눌러 주세여"); }
+    else if(sub){ await pushPost({push:"unsub",ep:sub.endpoint}); await sub.unsubscribe(); toast("알림을 모두 껐어여. 저장된 알림 주소도 지웠어여"); }
+  }catch(e){ toast("알림 설정을 못 했어여 😅 "+String(e&&e.message||e).slice(0,60)); }
+  render(); }
+let pushT=0;
+function pushSync(){ if(!(PUSH.w||PUSH.m)||!PUSH_OK()) return; clearTimeout(pushT);
+  pushT=setTimeout(()=>navigator.serviceWorker.getRegistration().then(r=>r&&r.pushManager.getSubscription()).then(s=>{ if(s) return pushPost(pushPayload(s)); }).catch(()=>{}),1500); }
+function pushBox(){ return `<div class="pushbox${PUSH.w||PUSH.m?"":" off"}"><b>🔔 알림</b><label class="toggle"><input type="checkbox" data-push="w" ${PUSH.w?"checked":""}> 월요일 9시 · 이번 주 김천 행사</label><label class="toggle"><input type="checkbox" data-push="m" ${PUSH.m?"checked":""}> 즐겨찾기 있는 날 아침 7시</label><small>알림을 보내려고 이 기기의 알림 주소와 즐겨찾기 일정만 저장해여(이름·위치·전화번호는 안 받아여). 알림을 다 끄면 바로 지워여.</small></div>`; }
+document.addEventListener("change",e=>{ const c=e.target.closest&&e.target.closest("[data-push]"); if(c) pushSet(c.dataset.push,c.checked); });
+if((PUSH.w||PUSH.m)&&Date.now()-(+load("kc-pushsync")||0)>12*3600e3) setTimeout(()=>{ store("kc-pushsync",String(Date.now())); pushSync(); },8000);   // 반나절에 한 번 알림 주소·즐겨찾기 다시 맞춤
 // 김천 날씨·미세먼지(wx.json, 30분마다)
 let WX=null;
 function loadWX(){ if(loadWX.busy||(WX&&Date.now()-WX._t<10*60000)) return; loadWX.busy=true;
@@ -1123,12 +1194,13 @@ function renderNear(){
   const isGps=sel.value==="gps";
   bl.innerHTML=`📍 기준: <b>${isGps?"내 위치":sel.value==="pin"?esc(oP.textContent):esc((sel.value||"").replace(/^[en]:/,"")+(sel.value.startsWith("n:")?((NB[sel.value.slice(2)]||{}).dg?" 구청 부근":" 시내"):" 중심"))}</b>${window.__gpsBusy?' '+mascot("look",34)+' <span class="tag cl">지금 위치 찾는 중… (지난번 위치로 먼저 보여드려여)</span>':""}${isGps?"":` <button type="button" id="nbgps" class="nbbtn">내 위치로 바꾸기</button>`} <button type="button" id="nbemd" class="nbbtn">동네·이웃 지역 고르기</button>`;
   box.appendChild(bl);
-  if(st.sec==="bus"){ const ns=bl.querySelector(".nearsel"); if(ns) ns.remove(); if(FEEDBACK_URL){ loadBus(); box.appendChild(busCard(true)); } return; }
+  if(st.sec==="bus"){ const ns=bl.querySelector(".nearsel"); if(ns) ns.remove(); if(FEEDBACK_URL){ loadBus(); const ef=favTodayCard(now); if(ef) box.appendChild(ef); box.appendChild(busCard(true)); } return; }
   loadWX(); if(WX&&!WX.stale){ const w=document.createElement("div"); w.className="wxbar"; w.innerHTML=wxLine(); box.appendChild(w); }
   if(!isGps) bl.querySelector("#nbgps").addEventListener("click",()=>$("gps").click());
   bl.querySelector("#nbemd").addEventListener("click",()=>{ st.nearPick=!st.nearPick; render(); });
   if(st.nearPick){ const d=document.createElement("div"); d.className="emdpick"; d.innerHTML=`<div class="nbsel nearsel">${nbChips()}</div>`+emdGrid(); bl.after(d); bindEmd(); }
   const grid=document.createElement("div"); grid.className="neargrid";
+  { const ef=favTodayCard(now); if(ef) grid.appendChild(ef); }
   if(FAV.size){ const fv=R.filter(r=>r.lat!=null&&isFav(r)); fv.forEach(r=>{ r.d=hav(st.base.lat,st.base.lng,r.lat,r.lng); r.ps=(r.hos||r.pharm||r.kio||r.office||r.erx)?lifeState(r,now):null; }); fv.sort((a,b)=>a.d-b.d);
     if(fv.length){ const card=document.createElement("section"); card.className="ncard favcard";
       card.innerHTML=`<div class="nh"><h2>★ 내 단골</h2></div>`+fv.slice(0,6).map(r=>`<div class="nitem"><div class="nl"><b>${esc(r.n)}</b>${r.ps?` <span class="tag ${r.ps.open?"op":"cl"}">${esc(r.ps.text)}</span>`:""}${isNb(r)?` <span class="tag rg">${esc(rgOf(r))}</span>`:""}${r.ev?" "+evTag(r):""}${r.g&&r.menu==="fuel"&&r.g[st.fuel||1]?` <span class="tag tf">${FUELN[st.fuel||1]} ${won(r.g[st.fuel||1])}원</span>`:""}<div class="na">${esc(r.a)}</div></div><div class="nr"><span class="nd">${fmtKm(r.d)}</span><a href="https://map.kakao.com/link/to/${encodeURIComponent(r.n)},${r.lat},${r.lng}" target="_blank" rel="noopener">길찾기</a>${r.ph?`<a href="${telHref(r.ph)}">전화</a>`:""}</div></div>`).join("")+(fv.length>6?`<p class="nnote">단골 ${fv.length}곳 중 가까운 6곳</p>`:"");
@@ -1284,6 +1356,8 @@ function renderGcart(){
       li.innerHTML=`<div class="garow">${po}<div class="gab"><div class="nm"><span class="evtime">${when}</span><span class="t"></span>${on&&!one?'<span class="tag op">공연 중</span>':""}</div><div class="ad"><div class="a">🕒 ${esc(p[6].replace(/요일/g,""))}</div><div class="a">📍 ${x.sub?esc(x.sub)+" · ":""}${esc(f[0])} <b class="pkm">${fmtKm(x.d)}</b> · ${esc(p[5])}</div>${info?`<div class="a">${info}</div>`:""}</div></div></div>
       <div class="links"><a class="route" href="https://map.kakao.com/link/to/${encodeURIComponent(f[0])},${f[2]},${f[3]}" target="_blank" rel="noopener">📍 길찾기</a>${p[11]?`<a href="${esc(p[11])}" target="_blank" rel="noopener">🎫 예매</a>`:""}${p[12]?`<a href="${esc(p[12])}" target="_blank" rel="noopener">네이버 예약</a>`:""}${!p[11]&&!p[12]?`<a href="https://m.search.naver.com/search.naver?query=${encodeURIComponent(p[3]+" "+f[0])}" target="_blank" rel="noopener">더 알아보기</a>`:""}</div>`;
       li.querySelector(".t").textContent=p[3]; }
+    if(x.ga){ const i=x.ga; addStar(li.querySelector(".nm"),"ga|"+i[0]+"|"+i[3],["ga",i[0],gaX(i).to||"",i[3],i[4],gaTimes(i)]); }
+    else { const p=x.pf; addStar(li.querySelector(".nm"),"pf|"+p[0],["pf",p[1],p[2],p[3],x.f[0]+" ("+x.f[1]+")",p[1]===p[2]?(p[6].match(/\d{1,2}:\d{2}/g)||[]).join(", "):""]); }
     list.appendChild(li); });
   $("more").hidden = xs.length<=st.shown;
 }
@@ -1321,7 +1395,7 @@ function renderVolley(){
     li.innerHTML=`<div class="nm"><span class="t"></span>${vbPlace(g)}${past?vbRes(g)||'<span class="tag loc">경기 끝</span>':`<span class="tag tf">${vbDday(g)}</span>`}</div>
       <div class="ad"><div class="a"></div><div class="alias">${g[5]}라운드 · ${esc(g[4])}</div></div>
       ${g[3]&&!past?`<div class="links"><a class="route" href="https://map.kakao.com/link/to/${encodeURIComponent(VB.home.n)},${VB.home.lat},${VB.home.lng}" target="_blank" rel="noopener">📍 길찾기</a><a href="${esc(VB.src)}" target="_blank" rel="noopener">🎫 예매·중계</a></div>`:""}`;
-    li.querySelector(".t").textContent=`${vbWhen(g)} vs ${g[2]}`; li.querySelector(".a").textContent=g[3]?"김천실내체육관 (운동장길 1)":"원정 경기"; list.appendChild(li); });
+    li.querySelector(".t").textContent=`${vbWhen(g)} vs ${g[2]}`; li.querySelector(".a").textContent=g[3]?"김천실내체육관 (운동장길 1)":"원정 경기"; if(!past) addStar(li.querySelector(".nm"),"vb|"+g[0],["vb",g[0],"",`배구 vs ${g[2]}${g[3]?" (홈)":" (원정)"}`,g[4],g[1]]); list.appendChild(li); });
   if(firstNext&&!renderVolley.scrolled){ renderVolley.scrolled=true; setTimeout(()=>{ const c=document.querySelector(".ctl"); window.scrollTo({top:firstNext.getBoundingClientRect().top+scrollY-(c?c.getBoundingClientRect().height:0)-60}); },60); }
 }
 // ---------- 전국 축제(한국관광공사 TourAPI 행사정보, 매일 갱신 fest.json) ----------
@@ -1357,7 +1431,7 @@ function renderFest(){
     li.innerHTML=`<div class="nm"><span class="t"></span>${on?'<span class="tag op">지금 하는 중</span>':`<span class="tag tf">${md(i[1])} 시작</span>`}</div><div class="km">${fmtKm(d)}</div>
       <div class="ad">${i[7]?`<img class="thumb" loading="lazy" alt="" src="${esc(i[7])}" onerror="this.remove()">`:""}<div class="a"></div><div class="alias">📅 ${md(i[1])} ~ ${md(i[2])}</div></div>
       <div class="links"><a class="route" href="https://map.kakao.com/link/to/${encodeURIComponent(i[0])},${i[4]},${i[5]}" target="_blank" rel="noopener">📍 길찾기</a>${i[6]?`<a class="call" href="${telHref(i[6].split(/[,/]/)[0])}">📞 문의</a>`:""}<a href="https://m.search.naver.com/search.naver?query=${encodeURIComponent(i[0])}" target="_blank" rel="noopener">더 알아보기</a></div>`;
-    li.querySelector(".t").textContent=i[0]; li.querySelector(".a").textContent=i[3]; list.appendChild(li); });
+    li.querySelector(".t").textContent=i[0]; li.querySelector(".a").textContent=i[3]; addStar(li.querySelector(".nm"),"fe|"+(i[8]||i[0]),["fe",d8(i[1]),d8(i[2]),i[0],(i[3]||"").split(" ").slice(0,2).join(" "),""]); list.appendChild(li); });
   $("more").hidden = items.length<=st.shown;
 }
 function renderEvents(){
@@ -1371,6 +1445,7 @@ function renderEvents(){
   const items=EVT.items.filter(i=>i[0]>=today&&(all||evtPublic(i)));
   const md=s=>`${+s.slice(5,7)}.${+s.slice(8)}`, endD=EVT.week&&EVT.week[1]||(items.length?items[items.length-1][0]:today);
   $("summary").innerHTML=evtModeBar()+`<span>📅 <b>김천 행사 · 오늘(${md(today)}) ~ ${md(endD)}</b> · ${items.length}건</span> · <label class="toggle"><input type="checkbox" id="evtall" ${all?"checked":""}> 행정 회의·교육도 보기</label><br><small>출처: <a href="${esc(EVT.src)}" target="_blank" rel="noopener">김천시 누리집 새소식 ‘주간행사계획’</a> · 행사는 사정에 따라 바뀔 수 있어여. 자세한 건 주관부서에 문의</small>`;
+  $("summary").insertAdjacentHTML("beforeend",pushBox());
   $("evtall").addEventListener("change",e=>{ st.evtAll=e.target.checked; renderEvents(); });
   if(!items.length){ list.innerHTML='<li class="empty">'+mascot("tilt",90)+'<br>오늘부터 보여드릴 행사가 없어여. 다음 주 계획은 보통 금요일에 올라와여.</li>'; return; }
   const DN=["일","월","화","수","목","금","토"]; let last="";
@@ -1380,6 +1455,7 @@ function renderEvents(){
     li.innerHTML=`<div class="nm"><span class="evtime">${esc(i[1]||"종일")}</span><span class="t"></span></div><div class="ad">${i[3]?`<div class="a">📍 <a href="https://map.kakao.com/?q=${encodeURIComponent("김천 "+i[3])}" target="_blank" rel="noopener"></a></div>`:""}<div class="alias"></div></div>`;
     li.querySelector(".t").textContent=i[2]; if(i[3]) li.querySelector(".a a").textContent=i[3];
     li.querySelector(".alias").textContent=(i[4]?"주관: "+i[4]:"")+(i[5]?" · "+i[5]:"");
+    if(i[0]>=today) addStar(li.querySelector(".nm"),"ev|"+i[0]+"|"+i[2],["ev",i[0],"",i[2],i[3]||"",i[1]||""]);
     list.appendChild(li); });
 }
 // ---------- 이용 통계: 무엇을 몇 번 눌렀는지 숫자만 모아 두었다가(이 기기 안) 앱을 열거나 닫을 때 보냄 ----------
@@ -1547,7 +1623,8 @@ function render(){
 const sm=load("kc-menu"); if(sm && (sm==="good"||D.menus.some(m=>m[0]===sm))){ st.cardMenu=sm; }
 { const lm=load("kc-lmenu"); if(LIFE_MENUS.some(m=>m[0]===lm)) st.lifeMenu=lm; const hm=load("kc-hmenu"); if(HER_MENUS.some(m=>m[0]===hm)) st.herMenu=hm; }
 // 앱을 새로 열면 늘 '내 주변'부터 (예전엔 마지막 탭을 기억했음). 세부 메뉴(약국·병원 등) 선택은 그대로 기억
-const ss=location.hash.includes("sec=")?load("kc-sec"):null; if(ss==="good"){ st.sec="card"; st.menu=st.cardMenu="good"; } else if(ss && SECS[ss]){ st.sec=ss; st.menu= ss==="card" ? st.cardMenu : ss==="life" ? (st.lifeMenu||"pharm") : ss==="her" ? (st.herMenu||"kids") : SECS[ss].menu; }
+const GO=(location.hash.match(/go=([a-z]+)/)||[])[1]; if(GO==="events"){ store("kc-sec","events"); store("kc-evtmode","kc"); st.evtMode="kc"; }
+const ss=location.hash.includes("sec=")||GO==="events"?load("kc-sec"):null; if(ss==="good"){ st.sec="card"; st.menu=st.cardMenu="good"; } else if(ss && SECS[ss]){ st.sec=ss; st.menu= ss==="card" ? st.cardMenu : ss==="life" ? (st.lifeMenu||"pharm") : ss==="her" ? (st.herMenu||"kids") : SECS[ss].menu; }
 const sb=load("kc-base"); if(sb&&sb.startsWith("n:")&&NB[sb.slice(2)]){ sel.value=sb; const c=NB[sb.slice(2)].c; st.base={lat:c[0],lng:c[1]}; $("status").textContent=`${sb.slice(2)}${NB[sb.slice(2)].dg?" 구청 부근":" 시내"} 기준 직선거리입니다.`; } else if(sb==="gps"){ let lp=null; try{ lp=JSON.parse(load("kc-lastpos")||"null"); }catch(e){}
   if(INAPP&&lp){ oG.hidden=false; sel.value="gps"; st.base={lat:lp.lat,lng:lp.lng}; $("status").textContent="지난번 내 위치로 보여드려여 · 새로 찾으려면 ‘내 위치’"; }
   else setTimeout(()=>$("gps").click(),300); } else if(sb && sb.startsWith("e:") && D.cen[sb.slice(2)]){sel.value=sb; const c=D.cen[sb.slice(2)]; st.base={lat:c[0],lng:c[1]}; $("status").textContent=`${sb.slice(2)} 중심 기준 직선거리입니다.`;}

@@ -1,0 +1,35 @@
+name: 알림 보내기
+# 한국시간 기준: 월요일 9시쯤 '이번 주 김천 행사', 매일 7시쯤 '오늘 즐겨찾기'
+# GitHub 예약 실행은 몇 분 늦을 수 있어서 조금 일찍(8:53, 6:47) 걸어 둠.
+on:
+  schedule:
+    - cron: "53 23 * * 0"   # 월 08:53 KST
+    - cron: "47 21 * * *"   # 매일 06:47 KST
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "weekly(이번 주 행사) 또는 morning(오늘 즐겨찾기)"
+        required: true
+        default: "morning"
+
+permissions:
+  contents: read
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pywebpush==2.5.0 requests
+      - name: 보내기
+        env:
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          PUSH_TOKEN: ${{ secrets.PUSH_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then MODE="${{ github.event.inputs.mode }}";
+          elif [ "${{ github.event.schedule }}" = "53 23 * * 0" ]; then MODE=weekly; else MODE=morning; fi
+          python scripts/send_push.py --$MODE

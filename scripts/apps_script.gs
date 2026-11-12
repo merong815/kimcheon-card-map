@@ -224,6 +224,63 @@ function busArr_(c, id) {
   return res;
 }
 
+
+// ---------- 🔔 알림 구독(웹 푸시) ----------
+// 저장: 기기 알림 주소(endpoint)·암호 키, 켠 알림 종류, 즐겨찾기 일정(제목·날짜·장소). 이름·위치·연락처는 없음.
+// 알림을 모두 끄면 그 줄을 바로 지움. 실제 발송은 GitHub(scripts/send_push.py)가 목록을 받아서 함.
+// 스크립트 속성 PUSH_TOKEN(아무도 모르는 긴 글자) 필요 — GitHub Secrets의 PUSH_TOKEN과 같은 값.
+const PUSH_SHEET = '알림구독';
+const PUSH_COLS = ['갱신', '알림주소', 'p256dh', 'auth', '월요일행사', '아침즐겨찾기', '즐겨찾기'];
+function pushSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(PUSH_SHEET);
+  if (!sh) { sh = ss.insertSheet(PUSH_SHEET); sh.appendRow(PUSH_COLS); sh.setFrozenRows(1); }
+  return sh;
+}
+function pushFind_(sh, ep) {
+  const n = sh.getLastRow(); if (n < 2) return -1;
+  const v = sh.getRange(2, 2, n - 1, 1).getValues();
+  for (let i = 0; i < v.length; i++) if (v[i][0] === ep) return i + 2;
+  return -1;
+}
+function pushSub_(d) {
+  const ep = String(d.ep || '');
+  if (!/^https:\/\/\S{20,800}$/.test(ep)) return { ok: false, msg: '알림 주소 오류' };
+  const p = clean_(d.p, 200), a = clean_(d.a, 80);
+  if (!p || !a) return { ok: false, msg: '키 오류' };
+  let f = [];
+  try { f = (Array.isArray(d.f) ? d.f : []).slice(0, 40).map(x => (Array.isArray(x) ? x : []).slice(0, 6).map(s => clean_(s, 80))); } catch (err) { f = []; }
+  const row = [new Date(), ep, p, a, d.w ? 1 : 0, d.m ? 1 : 0, JSON.stringify(f)];
+  const lock = LockService.getScriptLock(); lock.waitLock(10000);
+  try {
+    const sh = pushSheet_(), r = pushFind_(sh, ep);
+    if (!d.w && !d.m) { if (r > 0) sh.deleteRow(r); return { ok: true }; }
+    if (r > 0) sh.getRange(r, 1, 1, PUSH_COLS.length).setValues([row]);
+    else { if (sh.getLastRow() > 20000) return { ok: false, msg: '신청이 너무 많아여' }; sh.appendRow(row); }
+    return { ok: true };
+  } finally { lock.releaseLock(); }
+}
+function pushDel_(eps) {
+  const want = {}; (Array.isArray(eps) ? eps : [eps]).forEach(e => { if (e) want[String(e)] = 1; });
+  const lock = LockService.getScriptLock(); lock.waitLock(10000);
+  try {
+    const sh = pushSheet_(), n = sh.getLastRow(); if (n < 2) return { ok: true, n: 0 };
+    const v = sh.getRange(2, 2, n - 1, 1).getValues(); let k = 0;
+    for (let i = v.length - 1; i >= 0; i--) if (want[v[i][0]]) { sh.deleteRow(i + 2); k++; }
+    return { ok: true, n: k };
+  } finally { lock.releaseLock(); }
+}
+function pushList_() {
+  const sh = pushSheet_(), n = sh.getLastRow();
+  if (n < 2) return { ok: true, subs: [] };
+  const v = sh.getRange(2, 1, n - 1, PUSH_COLS.length).getValues();
+  return { ok: true, subs: v.map(r => { let f = []; try { f = JSON.parse(r[6] || '[]'); } catch (err) {} return { ep: r[1], p: r[2], a: r[3], w: +r[4], m: +r[5], f: f }; }) };
+}
+function pushTokenOk_(t) {
+  const k = PropertiesService.getScriptProperties().getProperty('PUSH_TOKEN');
+  return !!k && String(t || '') === k;
+}
+
 // 게시판 글 목록(공개된 것만, 최신순)
 function doGet(e) {
   if (e && e.parameter && e.parameter.bus === 'near') { try { return out_(busNear_(e.parameter.lat, e.parameter.lng)); } catch (err) { return out_({ ok: false, msg: String(err).slice(0, 120) }); } }
@@ -254,6 +311,12 @@ function doGet(e) {
 function doPost(e) {
   let d;
   try { d = JSON.parse(e.postData.contents); } catch (err) { return out_({ ok: false, msg: '형식 오류' }); }
+  if (d.push === 'sub') return out_(pushSub_(d));
+  if (d.push === 'unsub') return out_(pushDel_([d.ep]));
+  if (d.push === 'list' || d.push === 'del') {
+    if (!pushTokenOk_(d.token)) return out_({ ok: false, msg: '권한 없음' });
+    return out_(d.push === 'list' ? pushList_() : pushDel_(d.eps));
+  }
   if (d.hp) return out_({ ok: true });                      // 로봇이 채우는 숨은 칸
   const kind = d.kind === 'board' ? '게시판' : '건의';
   const body = clean_(d.body, 1000);
