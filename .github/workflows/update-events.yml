@@ -1,12 +1,19 @@
-name: 주간행사계획 갱신
+name: 김천시 누리집 자료 갱신(맥미니)
+# 시 누리집이 GitHub(해외) 서버 접속을 막아서, 집 맥미니(자체 실행기)에서 받는다.
+#  - 주간행사계획(events.json): 다음 주 것을 이미 받았으면 건너뜀(force를 켜면 무조건 다시 받음)
+#  - 문화예술회관 공연/전시 일정 + KOPIS 김천 공연(gcart.json)
+# 실행 시각은 의견함 Apps Script 시간 예약이 깨워 줌(매일 06:30, 금 19:30). 아래 예약은 혹시 모를 예비용.
 
 on:
   schedule:
-    # 주말에만: 한국시간 금요일 19:07, 토요일 09:07, 일요일 09:07 (UTC로 적어야 함)
-    - cron: "7 10 * * 5"
-    - cron: "7 0 * * 6"
-    - cron: "7 0 * * 0"
-  workflow_dispatch: {}
+    - cron: "7 10 * * 5"   # 금 19:07 KST
+    - cron: "7 0 * * 6"    # 토 09:07 KST
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "주간행사계획을 무조건 다시 받기"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -17,24 +24,28 @@ concurrency:
 
 jobs:
   update:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    runs-on: [self-hosted, macOS]
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: 한글 파일 읽기 라이브러리 설치
-        run: pip install olefile
+      - name: 파이썬 준비(맥미니)
+        run: |
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install -q olefile
       - name: 김천시 누리집에서 주간행사계획 받기
-        # 예약 실행: 다음 주 것을 이미 받았으면 건너뜀 / 손으로 실행: 무조건 다시 받음
-        run: python scripts/update_events.py ${{ github.event_name == 'workflow_dispatch' && '--force' || '' }}
+        continue-on-error: true
+        run: '"$RUNNER_TEMP/venv/bin/python" scripts/update_events.py ${{ inputs.force && ''--force'' || '''' }}'
+      - name: 문화예술회관 공연 일정 + KOPIS 받기
+        continue-on-error: true
+        env:
+          KOPIS_KEY: ${{ secrets.KOPIS_KEY }}
+        run: '"$RUNNER_TEMP/venv/bin/python" scripts/update_gcart.py'
       - name: 저장
         run: |
-          git add events.json
+          git add events.json gcart.json
           if git diff --cached --quiet; then echo "변경 없음"; exit 0; fi
           git config user.name "events-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "주간행사계획 갱신 $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')"
+          git commit -m "김천시 누리집 자료 갱신 $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')"
           for i in 1 2 3; do git pull --rebase && git push && exit 0; sleep 5; done
           exit 1

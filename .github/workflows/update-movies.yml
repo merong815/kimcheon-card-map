@@ -29,11 +29,7 @@ jobs:
           KOBIS_KEY: ${{ secrets.KOBIS_KEY }}
         run: python scripts/update_life.py --movies
 
-      - name: 김천 공연 일정 받기(문화예술회관 일정표 + KOPIS)
-        continue-on-error: true
-        env:
-          KOPIS_KEY: ${{ secrets.KOPIS_KEY }}
-        run: python scripts/update_gcart.py
+      # 김천 공연 일정(gcart.json)은 시 누리집이 GitHub 서버를 막아서 맥미니에서 받음 → update-events.yml
 
       - name: 이웃 시군(80km 안) 공연 받기(KOPIS)
         continue-on-error: true

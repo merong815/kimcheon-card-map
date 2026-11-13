@@ -353,3 +353,30 @@ function doPost(e) {
     lock.releaseLock();
   }
 }
+
+// ---------- ⏰ 정시 깨우기(GitHub 예약 실행이 1~3시간씩 늦거나 건너뛰어서 Apps Script가 대신 깨움) ----------
+// 스크립트 속성 GH_TOKEN: GitHub 세분화 토큰(이 저장소만, Actions 읽기·쓰기). 처음 한 번 setupTriggers()를 실행하면 아래 시간표가 걸림.
+const GH_REPO = 'merong815/kimcheon-card-map';
+function ghDispatch_(wf, inputs) {
+  const tok = PropertiesService.getScriptProperties().getProperty('GH_TOKEN');
+  if (!tok) throw new Error('스크립트 속성 GH_TOKEN이 없습니다.');
+  const r = UrlFetchApp.fetch('https://api.github.com/repos/' + GH_REPO + '/actions/workflows/' + wf + '/dispatches', {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { Authorization: 'Bearer ' + tok, Accept: 'application/vnd.github+json' },
+    payload: JSON.stringify({ ref: 'main', inputs: inputs || {} })
+  });
+  if (r.getResponseCode() !== 204) throw new Error('GitHub 응답 ' + r.getResponseCode() + ': ' + r.getContentText().slice(0, 200));
+}
+function tickPushMorning() { ghDispatch_('send-push.yml', { mode: 'morning' }); }   // 07시: 오늘 즐겨찾기
+function tickPushDaily() { ghDispatch_('send-push.yml', { mode: 'daily' }); }       // 09시: 오늘 김천 행사·배구·공연
+function tickKimcheonSite() { ghDispatch_('update-events.yml', {}); }               // 맥미니가 시 누리집 자료 받기
+function setupTriggers() {
+  ScriptApp.getProjectTriggers().filter(t => /^tick/.test(t.getHandlerFunction())).forEach(t => ScriptApp.deleteTrigger(t));
+  const tz = 'Asia/Seoul';
+  ScriptApp.newTrigger('tickKimcheonSite').timeBased().atHour(6).nearMinute(20).everyDays(1).inTimezone(tz).create();
+  ScriptApp.newTrigger('tickPushMorning').timeBased().atHour(7).nearMinute(0).everyDays(1).inTimezone(tz).create();
+  ScriptApp.newTrigger('tickPushDaily').timeBased().atHour(9).nearMinute(0).everyDays(1).inTimezone(tz).create();
+  ScriptApp.newTrigger('tickKimcheonSite').timeBased().onWeekDay(ScriptApp.WeekDay.FRIDAY).atHour(19).nearMinute(30).inTimezone(tz).create();
+  return '시간 예약 4개를 걸었습니다.';
+}
+function testDispatch() { tickKimcheonSite(); return 'GitHub에 신호를 보냈습니다. Actions에서 맥미니 작업이 도는지 보세요.'; }

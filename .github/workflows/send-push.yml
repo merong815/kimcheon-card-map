@@ -1,10 +1,8 @@
 name: 알림 보내기
 # 한국시간 기준: 매일 9시쯤 '오늘 김천 행사·배구·공연', 매일 7시쯤 '오늘 즐겨찾기'
-# GitHub 예약 실행은 몇 분 늦을 수 있어서 조금 일찍(8:53, 6:47) 걸어 둠.
+# GitHub 예약 실행은 1~3시간씩 늦거나 건너뛰어서, 의견함 Apps Script 시간 예약이 정시에 깨움(workflow_dispatch).
+# 아래 예약은 쓰지 않음(늦게 와서 두 번 보내는 일을 막으려고 지움).
 on:
-  schedule:
-    - cron: "53 23 * * *"   # 매일 08:53 KST
-    - cron: "47 21 * * *"   # 매일 06:47 KST
   workflow_dispatch:
     inputs:
       mode:
@@ -31,5 +29,5 @@ jobs:
           PUSH_TOKEN: ${{ secrets.PUSH_TOKEN }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then MODE="${{ github.event.inputs.mode }}";
-          elif [ "${{ github.event.schedule }}" = "53 23 * * *" ]; then MODE=daily; else MODE=morning; fi
+          else MODE=daily; fi
           python scripts/send_push.py --$MODE
