@@ -1,4 +1,4 @@
-"""김천시청 누리집 '새소식' 게시판의 주간행사계획(한글 .hwp 첨부)을 받아 events.json을 만든다.
+"""김천시청 누리집 '새소식' 게시판의 주간행사계획(한글 .hwp 또는 .hwpx 첨부)을 받아 events.json을 만든다.
 
 GitHub Actions에서 주말에만 실행(금요일 19시, 토·일 오전 9시). 보통 금요일에 다음 주 계획이 올라옴.
 바뀐 게 없으면 저장소에 아무것도 올리지 않는다.
@@ -8,7 +8,10 @@ GitHub Actions에서 주말에만 실행(금요일 19시, 토·일 오전 9시).
 events.json: {"title", "week": [시작일, 끝일], "src", "updated", "items": [[날짜, 시각, 행사명, 장소, 주관부서, 덧붙임], ...]}
 """
 import html
+import io
 import json
+import zipfile
+import xml.etree.ElementTree as ET
 import re
 import struct
 import sys
@@ -95,6 +98,48 @@ def hwp_cells(path_or_bytes):
     return cells
 
 
+# ---------- 한글(.hwpx, 새 형식 = zip 안의 XML) 표 읽기 ----------
+
+def _ln(tag):
+    return tag.rsplit("}", 1)[-1]
+
+
+def hwpx_cells(b):
+    """.hwpx의 첫 번째 표를 (행, 열, 글) 목록으로."""
+    z = zipfile.ZipFile(io.BytesIO(b))
+    secs = sorted((n for n in z.namelist() if re.match(r"Contents/section\d+\.xml$", n)), key=lambda n: int(re.findall(r"\d+", n)[-1]))
+    for n in secs:
+        root = ET.fromstring(z.read(n))
+        tbl = next((e for e in root.iter() if _ln(e.tag) == "tbl"), None)
+        if tbl is None:
+            continue
+        cells = []
+        for tc in tbl.iter():
+            if _ln(tc.tag) != "tc":
+                continue
+            addr = next((e for e in tc if _ln(e.tag) == "cellAddr"), None)
+            if addr is None:
+                continue
+            paras = []
+            for p in tc.iter():
+                if _ln(p.tag) == "p":
+                    s = "".join(t.text or "" for t in p.iter() if _ln(t.tag) == "t").strip()
+                    if s:
+                        paras.append(s)
+            cells.append([int(addr.get("rowAddr", 0)), int(addr.get("colAddr", 0)), " ".join(paras)])
+        return cells
+    return []
+
+
+def doc_cells(b):
+    """첨부 형식에 맞춰 읽기: .hwpx(zip) / .hwp(OLE)."""
+    if b[:2] == b"PK":
+        return hwpx_cells(b)
+    if b[:8] == bytes.fromhex("D0CF11E0A1B11AE1"):
+        return hwp_cells(b)
+    raise ValueError("모르는 첨부 형식(앞 8바이트 %s)" % b[:8].hex())
+
+
 def split_place(s):
     """맨 끝 괄호(안에 괄호가 또 있어도 됨)를 장소로 뗌. '(~11.4.)' 같은 기간은 장소가 아님."""
     s = s.strip()
@@ -153,11 +198,12 @@ def read_post(bidx, title):
     if not wk:
         return None
     view = fetch(VIEW.format(bidx))
-    fm = re.search(r"fn_egov_downFile\('([0-9a-f]+)','([0-9a-f]+)'\)[^>]*title=\"[^\"]*\.hwp", view)
+    fm = re.search(r"fn_egov_downFile\('([0-9a-f]+)','([0-9a-f]+)'\)[^>]*title=\"[^\"]*\.hwpx?\"", view) or \
+        re.search(r"fn_egov_downFile\('([0-9a-f]+)','([0-9a-f]+)'\)[^>]*title=\"[^\"]*\.hwp", view)
     if not fm:
         return None
     b = fetch(f"{BASE}/cmm/fms/FileDown.do?atchFileId={fm.group(1)}&fileSn={fm.group(2)}", binary=True)
-    return wk, parse_table(hwp_cells(b), wk[0].year, wk[0])
+    return wk, parse_table(doc_cells(b), wk[0].year, wk[0])
 
 
 def main():
@@ -184,7 +230,11 @@ def main():
         wk = week_of(title)
         if not wk or wk[1] < today:      # 이미 다 지난 주는 건너뜀
             continue
-        r = read_post(bidx, title)
+        try:
+            r = read_post(bidx, title)
+        except Exception as e:   # 한 주가 실패해도 다른 주는 살림
+            print(f"'{title}' 읽기 실패: {e}")
+            r = None
         if not r:
             continue
         weeks.append(r[0]); items += r[1]
